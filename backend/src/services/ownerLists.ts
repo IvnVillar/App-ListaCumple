@@ -95,6 +95,71 @@ export async function addItem(db: Db, listId: string, input: CreateItemInput): P
   return result.rows[0];
 }
 
+export async function getItemForOwner(db: Db, listId: string, itemId: string): Promise<OwnerItemRow | null> {
+  const result = await db.query<OwnerItemRow>(
+    `SELECT items.*,
+            EXISTS (SELECT 1 FROM reservations r WHERE r.item_id = items.id) AS has_destination
+     FROM items
+     WHERE items.id = $1 AND items.list_id = $2`,
+    [itemId, listId]
+  );
+  return result.rows[0] ?? null;
+}
+
+export interface UpdateItemInput {
+  title?: string;
+  imageUrl?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  sourceUrl?: string | null;
+  storeName?: string | null;
+  notes?: string | null;
+  isGroupGift?: boolean;
+}
+
+export async function updateItem(
+  db: Db,
+  listId: string,
+  itemId: string,
+  input: UpdateItemInput
+): Promise<OwnerItemRow | null> {
+  const fields: string[] = [];
+  const values: unknown[] = [];
+  let paramIndex = 1;
+
+  const columns: Record<string, keyof UpdateItemInput> = {
+    title: "title",
+    image_url: "imageUrl",
+    price: "price",
+    currency: "currency",
+    source_url: "sourceUrl",
+    store_name: "storeName",
+    notes: "notes",
+    is_group_gift: "isGroupGift",
+  };
+
+  for (const [column, key] of Object.entries(columns)) {
+    if (key in input) {
+      fields.push(`${column} = $${paramIndex}`);
+      values.push(input[key]);
+      paramIndex += 1;
+    }
+  }
+
+  if (fields.length === 0) {
+    return getItemForOwner(db, listId, itemId);
+  }
+
+  values.push(itemId, listId);
+  const result = await db.query<OwnerItemRow>(
+    `UPDATE items SET ${fields.join(", ")}
+     WHERE id = $${paramIndex} AND list_id = $${paramIndex + 1}
+     RETURNING *, EXISTS (SELECT 1 FROM reservations r WHERE r.item_id = items.id) AS has_destination`,
+    values
+  );
+  return result.rows[0] ?? null;
+}
+
 export async function deleteItem(db: Db, listId: string, itemId: string): Promise<boolean> {
   const result = await db.query("DELETE FROM items WHERE id = $1 AND list_id = $2 RETURNING id", [
     itemId,

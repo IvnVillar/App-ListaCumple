@@ -1,13 +1,13 @@
 import express, { type Express } from "express";
 import type { Db } from "./db";
-import { extractMetadata } from "./extractMetadata";
+import { extractMetadata as defaultExtractMetadata } from "./extractMetadata";
 import { FetchError } from "./fetchHtml";
 import type { ExtractRequestBody } from "./types";
 import { createAuthRouter } from "./routes/auth";
-import { createOwnerListsRouter } from "./routes/ownerLists";
+import { createOwnerListsRouter, type MetadataExtractor } from "./routes/ownerLists";
 import { createVisitorListsRouter } from "./routes/visitorLists";
 
-export function createApp(db: Db): Express {
+export function createApp(db: Db, extractMetadata: MetadataExtractor = defaultExtractMetadata): Express {
   const app = express();
   app.use(express.json());
 
@@ -32,7 +32,7 @@ export function createApp(db: Db): Express {
   });
 
   app.use("/api/auth", createAuthRouter(db));
-  app.use("/api/lists", createOwnerListsRouter(db));
+  app.use("/api/lists", createOwnerListsRouter(db, extractMetadata));
   app.use("/api/l", createVisitorListsRouter(db));
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
