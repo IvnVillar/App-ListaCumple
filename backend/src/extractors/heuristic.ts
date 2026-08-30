@@ -5,20 +5,18 @@ const PRICE_REGEX = /(\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d{2})?)\s?€/;
 const PRICE_KEYWORDS = /(precio|price|pvp)/i;
 
 function findLikelyImage($: CheerioAPI): string | null {
-  let best: { src: string; area: number } | null = null;
+  const candidates: { src: string; area: number }[] = [];
 
   $("img").each((_, el) => {
     const src = $(el).attr("src") || $(el).attr("data-src");
     if (!src || src.startsWith("data:")) return;
     const width = Number($(el).attr("width")) || 0;
     const height = Number($(el).attr("height")) || 0;
-    const area = width * height;
-    if (!best || area > best.area) {
-      best = { src, area };
-    }
+    candidates.push({ src, area: width * height });
   });
 
-  return best?.src ?? null;
+  if (candidates.length === 0) return null;
+  return candidates.reduce((a, b) => (b.area > a.area ? b : a)).src;
 }
 
 function findLikelyPrice($: CheerioAPI): string | null {
