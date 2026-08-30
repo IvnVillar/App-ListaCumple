@@ -25,6 +25,7 @@ export default function AddItemScreen() {
   const [currency, setCurrency] = useState("");
   const [storeName, setStoreName] = useState("");
   const [notes, setNotes] = useState("");
+  const [manualLink, setManualLink] = useState("");
   const [isGroupGift, setIsGroupGift] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export default function AddItemScreen() {
         image_url: imageUrl.trim() || null,
         price: price ? Number(price) : null,
         currency: currency.trim() || null,
-        source_url: mode === "url" && sourceUrl.trim() ? sourceUrl.trim() : null,
+        source_url: (mode === "url" ? sourceUrl.trim() : manualLink.trim()) || null,
         store_name: storeName.trim() || null,
         notes: notes.trim() || null,
         is_group_gift: isGroupGift,
@@ -153,6 +154,19 @@ export default function AddItemScreen() {
 
           <Text style={shared.label}>Precio</Text>
           <FormInput value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="29.99" />
+
+          {mode === "manual" && (
+            <>
+              <Text style={shared.label}>Link (opcional)</Text>
+              <FormInput
+                value={manualLink}
+                onChangeText={setManualLink}
+                autoCapitalize="none"
+                keyboardType="url"
+                placeholder="https://..."
+              />
+            </>
+          )}
 
           <Text style={shared.label}>Moneda</Text>
           <FormInput value={currency} onChangeText={setCurrency} placeholder="EUR" autoCapitalize="characters" maxLength={3} />
