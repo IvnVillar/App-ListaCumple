@@ -1,3 +1,4 @@
+import cors from "cors";
 import express, { type Express } from "express";
 import type { Db } from "./db";
 import { extractMetadata as defaultExtractMetadata } from "./extractMetadata";
@@ -9,6 +10,7 @@ import { createVisitorListsRouter } from "./routes/visitorLists";
 
 export function createApp(db: Db, extractMetadata: MetadataExtractor = defaultExtractMetadata): Express {
   const app = express();
+  app.use(cors());
   app.use(express.json());
 
   app.post("/api/extract-metadata", async (req, res) => {

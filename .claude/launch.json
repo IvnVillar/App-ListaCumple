@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "backend",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "set PATH=C:\\Program Files\\nodejs;%PATH% && cd /d C:\\Users\\ivo20\\Documents\\Claude\\backend && npm run dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "wishlist-app",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "set PATH=C:\\Program Files\\nodejs;%PATH% && cd /d C:\\Users\\ivo20\\Documents\\Claude\\app && npx expo start --web"
+      ],
+      "port": 8081
+    }
+  ]
+}
