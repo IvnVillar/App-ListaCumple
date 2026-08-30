@@ -1,4 +1,5 @@
-import { Agent, interceptors, request } from "undici";
+import { Agent, buildConnector, interceptors, request } from "undici";
+import { BlockedAddressError, isBlockedConnectTarget, safeLookup } from "./ssrfGuard";
 
 const REAL_BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
@@ -6,7 +7,24 @@ const REAL_BROWSER_UA =
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_REDIRECTIONS = 5;
 
-const redirectingAgent = new Agent().compose(interceptors.redirect({ maxRedirections: MAX_REDIRECTIONS }));
+// safeLookup cubre el caso "hostname a resolver", pero cuando el destino de
+// la conexión YA es una IP literal (p. ej. tras una redirección a
+// http://169.254.169.254/), Node ni siquiera llama a `lookup` — por eso
+// se valida también aquí, antes de delegar en el conector real de undici.
+// Se aplica a nivel de Agent, así que cubre cada salto de una redirección.
+const baseConnector = buildConnector({ lookup: safeLookup });
+
+const guardedConnector: typeof baseConnector = (options, callback) => {
+  if (isBlockedConnectTarget(options.hostname)) {
+    callback(new BlockedAddressError(`Dirección bloqueada por seguridad: ${options.hostname}`), null);
+    return;
+  }
+  baseConnector(options, callback);
+};
+
+const redirectingAgent = new Agent({ connect: guardedConnector }).compose(
+  interceptors.redirect({ maxRedirections: MAX_REDIRECTIONS })
+);
 
 export class FetchError extends Error {
   constructor(message: string, public readonly cause?: unknown) {
@@ -55,6 +73,9 @@ export async function fetchHtml(url: string): Promise<{ html: string; finalUrl: 
     if (err instanceof FetchError) throw err;
     if (err instanceof Error && err.name === "AbortError") {
       throw new FetchError("Timeout al contactar con la tienda");
+    }
+    if (err instanceof BlockedAddressError || (err as { cause?: unknown })?.cause instanceof BlockedAddressError) {
+      throw new FetchError("No se puede acceder a esa dirección");
     }
     throw new FetchError("No se pudo obtener la página de la tienda", err);
   } finally {
