@@ -23,7 +23,10 @@ function ActionForm({
 
   async function submit() {
     setError(null);
-    if (!alias.trim()) return;
+    if (!alias.trim()) {
+      setError("Indica tu nombre o apodo");
+      return;
+    }
     setBusy(true);
     try {
       if (item.is_group_gift) {
