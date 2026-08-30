@@ -3,15 +3,8 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
 import * as api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { OCCASION_LABELS } from "@/lib/occasions";
 import { colors, shared } from "@/lib/styles";
-
-const OCCASION_LABELS: Record<api.OccasionType, string> = {
-  cumpleanos: "Cumpleaños",
-  boda: "Boda",
-  baby_shower: "Baby shower",
-  navidad: "Navidad",
-  puntual: "Ocasión puntual",
-};
 
 export default function ListsScreen() {
   const { token, logout } = useAuth();

@@ -5,15 +5,8 @@ import { FormInput } from "@/components/form-input";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { OCCASIONS } from "@/lib/occasions";
 import { colors, shared } from "@/lib/styles";
-
-const OCCASIONS: { value: api.OccasionType; label: string }[] = [
-  { value: "cumpleanos", label: "Cumpleaños" },
-  { value: "boda", label: "Boda" },
-  { value: "baby_shower", label: "Baby shower" },
-  { value: "navidad", label: "Navidad" },
-  { value: "puntual", label: "Ocasión puntual" },
-];
 
 export default function NewListScreen() {
   const { token } = useAuth();

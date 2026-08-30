@@ -4,15 +4,8 @@ import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from
 import { FormInput } from "@/components/form-input";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
+import { OCCASION_LABELS } from "@/lib/occasions";
 import { colors, shared } from "@/lib/styles";
-
-const OCCASION_LABELS: Record<api.OccasionType, string> = {
-  cumpleanos: "Cumpleaños",
-  boda: "Boda",
-  baby_shower: "Baby shower",
-  navidad: "Navidad",
-  puntual: "Ocasión puntual",
-};
 
 function ActionForm({
   item,
