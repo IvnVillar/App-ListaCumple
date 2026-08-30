@@ -14,11 +14,16 @@ import {
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { API_BASE_URL } from "@/lib/config";
+import { APP_BASE_URL } from "@/lib/config";
 import { colors, shared } from "@/lib/styles";
 
 function shareUrl(shareToken: string): string {
-  return `${API_BASE_URL}/l/${shareToken}`;
+  // El backend (API_BASE_URL) no sirve esta ruta — es una pantalla de la
+  // app. En web el propio origen ya es correcto y se adapta solo a
+  // cualquier host/puerto real; en nativo no hay window, así que cae al
+  // dominio configurado en APP_BASE_URL (el universal link real en producción).
+  const base = Platform.OS === "web" && typeof window !== "undefined" ? window.location.origin : APP_BASE_URL;
+  return `${base}/l/${shareToken}`;
 }
 
 export default function ListDetailScreen() {
