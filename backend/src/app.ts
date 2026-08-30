@@ -1,5 +1,6 @@
+import "express-async-errors";
 import cors from "cors";
-import express, { type Express } from "express";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import type { Db } from "./db";
 import { extractMetadata as defaultExtractMetadata } from "./extractMetadata";
 import { FetchError } from "./fetchHtml";
@@ -38,6 +39,15 @@ export function createApp(db: Db, extractMetadata: MetadataExtractor = defaultEx
   app.use("/api/l", createVisitorListsRouter(db));
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
+
+  // Red de seguridad: cualquier error no capturado explícitamente (fallo de
+  // BD, etc.) llega aquí gracias a express-async-errors en vez de tumbar el
+  // proceso con una promesa rechazada sin gestionar.
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    console.error("Error no manejado:", err);
+    if (res.headersSent) return;
+    res.status(500).json({ error: "Error interno del servidor" });
+  });
 
   return app;
 }

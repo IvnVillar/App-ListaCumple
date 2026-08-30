@@ -7,6 +7,12 @@ export class NotFoundError extends Error {}
 export class ExpiredError extends Error {}
 export class InvalidOperationError extends Error {}
 
+const UNIQUE_VIOLATION = "23505";
+
+function isUniqueViolation(err: unknown): boolean {
+  return (err as { code?: string } | null)?.code === UNIQUE_VIOLATION;
+}
+
 interface VisitorItemRow extends ItemRow {
   reserver_alias: string | null;
   total_contributed: string | null;
@@ -109,7 +115,8 @@ export async function reserveItem(
       alias,
     ]);
   } catch (err) {
-    throw new ConflictError("Este artículo ya tiene destino");
+    if (isUniqueViolation(err)) throw new ConflictError("Este artículo ya tiene destino");
+    throw err;
   }
 }
 
@@ -146,7 +153,8 @@ export async function contributeToItem(
         itemId,
         alias,
       ]);
-    } catch {
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
       // Carrera con otro contribuyente creando la misma reserva: usar la que ya exista.
       const retry = await db.query<{ id: string }>("SELECT id FROM reservations WHERE item_id = $1", [
         itemId,

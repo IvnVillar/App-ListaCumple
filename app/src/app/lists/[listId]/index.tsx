@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import * as api from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
 import { colors, shared } from "@/lib/styles";
@@ -25,12 +26,20 @@ export default function ListDetailScreen() {
   const { token } = useAuth();
   const [list, setList] = useState<api.ListDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
+    setLoadError(null);
     try {
       setList(await api.getList(token, listId));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      setLoadError(err instanceof ApiError ? err.message : "No se pudo cargar la lista");
     } finally {
       setLoading(false);
     }
@@ -59,14 +68,29 @@ export default function ListDetailScreen() {
 
   async function handleDeleteItem(itemId: string) {
     if (!token || !list) return;
-    await api.deleteItem(token, list.id, itemId);
-    load();
+    try {
+      await api.deleteItem(token, list.id, itemId);
+      load();
+    } catch (err) {
+      Alert.alert("No se pudo eliminar", err instanceof ApiError ? err.message : "Inténtalo de nuevo.");
+    }
   }
 
   if (loading && !list) {
     return (
       <View style={shared.center}>
         <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (loadError && !list) {
+    return (
+      <View style={shared.center}>
+        <Text style={{ color: colors.textSecondary, marginBottom: 16 }}>{loadError}</Text>
+        <TouchableOpacity style={shared.secondaryButton} onPress={load}>
+          <Text style={shared.secondaryButtonText}>Reintentar</Text>
+        </TouchableOpacity>
       </View>
     );
   }

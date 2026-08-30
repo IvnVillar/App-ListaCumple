@@ -1,7 +1,10 @@
 import type { CheerioAPI } from "cheerio";
 import type { ExtractedMetadata } from "../types";
 
-const PRICE_REGEX = /(\d{1,3}(?:[.\s]\d{3})*(?:[.,]\d{2})?)\s?€/;
+// Acepta tanto miles agrupados ("1.234,56€", "1 234€") como una tirada de
+// dígitos sin separador ("1234€") — con sólo la alternativa agrupada, un
+// precio de 4+ cifras sin separador de miles perdía las primeras cifras.
+const PRICE_REGEX = /((?:\d{1,3}(?:[.\s]\d{3})+|\d+)(?:[.,]\d{2})?)\s?€/;
 const PRICE_KEYWORDS = /(precio|price|pvp)/i;
 
 function findLikelyImage($: CheerioAPI): string | null {

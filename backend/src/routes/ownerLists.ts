@@ -34,7 +34,7 @@ const createItemSchema = z
   .object({
     title: z.string().trim().min(1).max(300).optional(),
     image_url: z.string().url().optional().nullable(),
-    price: z.number().positive().optional().nullable(),
+    price: z.number().nonnegative().optional().nullable(),
     currency: z.string().length(3).optional().nullable(),
     source_url: z.string().url().optional().nullable(),
     store_name: z.string().max(120).optional().nullable(),
@@ -49,7 +49,7 @@ const updateItemSchema = z
   .object({
     title: z.string().trim().min(1).max(300).optional(),
     image_url: z.string().url().optional().nullable(),
-    price: z.number().positive().optional().nullable(),
+    price: z.number().nonnegative().optional().nullable(),
     currency: z.string().length(3).optional().nullable(),
     source_url: z.string().url().optional().nullable(),
     store_name: z.string().max(120).optional().nullable(),
@@ -57,6 +57,20 @@ const updateItemSchema = z
     is_group_gift: z.boolean().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, { message: "No hay ningún campo que actualizar" });
+
+// Los datos extraídos vienen de HTML de terceros y no pasan por createItemSchema
+// (que sólo valida los campos enviados a mano) — se sanean aparte antes de usarse,
+// para no guardar p.ej. una "moneda" de 8 caracteres o un precio negativo.
+function sanitizeExtracted(extracted: ExtractedMetadata | null) {
+  if (!extracted) return null;
+  const price =
+    extracted.price != null && Number.isFinite(extracted.price) && extracted.price >= 0
+      ? extracted.price
+      : null;
+  const currency = extracted.currency && /^[A-Za-z]{3}$/.test(extracted.currency) ? extracted.currency : null;
+  const store_name = extracted.store_name ? extracted.store_name.slice(0, 120) : null;
+  return { ...extracted, price, currency, store_name };
+}
 
 async function summarizeList(db: Db, listId: string) {
   const items = await getItemsForOwner(db, listId);
@@ -121,7 +135,7 @@ export function createOwnerListsRouter(db: Db, extractMetadata: MetadataExtracto
     let extracted: ExtractedMetadata | null = null;
     if (manual.source_url) {
       try {
-        extracted = await extractMetadata(manual.source_url);
+        extracted = sanitizeExtracted(await extractMetadata(manual.source_url));
       } catch (err) {
         if (!(err instanceof FetchError)) throw err;
         extracted = null;

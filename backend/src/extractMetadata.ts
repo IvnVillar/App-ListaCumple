@@ -51,6 +51,17 @@ export async function extractMetadata(inputUrl: string): Promise<ExtractedMetada
   let strategy_used: ExtractedMetadata["strategy_used"] = "none";
   let fields: Partial<ExtractedMetadata> = {};
 
+  // Cada paso sólo debe rellenar los campos que el paso anterior dejó a null,
+  // nunca pisar un valor ya encontrado con el null del siguiente candidato.
+  function mergeMissing(candidate: Partial<ExtractedMetadata> | null) {
+    if (!candidate) return;
+    for (const key of ["title", "image_url", "price", "currency", "store_name"] as const) {
+      if (fields[key] == null && candidate[key] != null) {
+        (fields as Record<string, unknown>)[key] = candidate[key];
+      }
+    }
+  }
+
   const jsonLd = extractFromJsonLd($);
   if (jsonLd) {
     fields = jsonLd;
@@ -60,7 +71,7 @@ export async function extractMetadata(inputUrl: string): Promise<ExtractedMetada
   if (!isComplete(fields)) {
     const og = extractFromOpenGraph($);
     if (og) {
-      fields = { ...og, ...fields };
+      mergeMissing(og);
       if (strategy_used === "none") strategy_used = "open-graph";
       else warnings.push("Campos completados con Open Graph tras JSON-LD incompleto");
     }
@@ -68,7 +79,7 @@ export async function extractMetadata(inputUrl: string): Promise<ExtractedMetada
 
   if (!isComplete(fields)) {
     const heuristic = extractHeuristic($);
-    fields = { ...heuristic, ...fields };
+    mergeMissing(heuristic);
     if (strategy_used === "none") strategy_used = "heuristic";
     else warnings.push("Campos completados con heurística HTML");
   }

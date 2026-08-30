@@ -37,7 +37,12 @@ export async function fetchHtml(url: string): Promise<{ html: string; finalUrl: 
       },
     });
 
-    if (response.statusCode >= 400) {
+    if (response.statusCode >= 300) {
+      // >=400 es un error real; 3xx aquí significa que se agotaron las
+      // MAX_REDIRECTIONS redirecciones sin llegar a una respuesta final, y
+      // undici entrega esa última respuesta de redirección tal cual en vez
+      // de seguir — sin este chequeo se parsearía la página-puente como si
+      // fuera el producto.
       throw new FetchError(`La tienda respondió con estado ${response.statusCode}`);
     }
 
