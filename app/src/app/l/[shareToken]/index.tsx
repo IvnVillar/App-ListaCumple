@@ -134,6 +134,11 @@ export default function VisitorListScreen() {
                     {item.price} {item.currency ?? ""}
                   </Text>
                 )}
+                {item.notes && (
+                  <Text style={{ color: colors.textSecondary, fontSize: 13, fontStyle: "italic" }}>
+                    {item.notes}
+                  </Text>
+                )}
                 {item.is_group_gift && item.group_gift && (
                   <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
                     Aportado: {item.group_gift.total_contributed}

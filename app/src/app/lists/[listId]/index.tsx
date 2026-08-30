@@ -132,6 +132,11 @@ export default function ListDetailScreen() {
                   {item.price} {item.currency ?? ""}
                 </Text>
               )}
+              {item.notes && (
+                <Text style={{ color: colors.textSecondary, fontSize: 13, fontStyle: "italic" }}>
+                  {item.notes}
+                </Text>
+              )}
               <Text
                 style={{
                   color: item.has_destination ? colors.success : colors.textSecondary,

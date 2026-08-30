@@ -24,6 +24,7 @@ export default function AddItemScreen() {
   const [price, setPrice] = useState("");
   const [currency, setCurrency] = useState("");
   const [storeName, setStoreName] = useState("");
+  const [notes, setNotes] = useState("");
   const [isGroupGift, setIsGroupGift] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +68,7 @@ export default function AddItemScreen() {
         currency: currency.trim() || null,
         source_url: mode === "url" && sourceUrl.trim() ? sourceUrl.trim() : null,
         store_name: storeName.trim() || null,
+        notes: notes.trim() || null,
         is_group_gift: isGroupGift,
       });
       router.back();
@@ -160,6 +162,9 @@ export default function AddItemScreen() {
 
           <Text style={shared.label}>Tienda</Text>
           <FormInput value={storeName} onChangeText={setStoreName} placeholder="Amazon" />
+
+          <Text style={shared.label}>Nota</Text>
+          <FormInput value={notes} onChangeText={setNotes} placeholder="Talla M, color azul..." />
 
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 20 }}>
             <Text style={{ color: colors.text, fontSize: 15 }}>Bote común (regalo colectivo)</Text>
