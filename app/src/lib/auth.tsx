@@ -1,6 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import * as api from "./api";
+import { secureStorage } from "./secureStorage";
 
 const TOKEN_KEY = "wishlist_token";
 
@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem(TOKEN_KEY).then((stored) => {
+    secureStorage.getItem(TOKEN_KEY).then((stored) => {
       setToken(stored);
       setIsLoading(false);
     });
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function persistToken(newToken: string) {
     setToken(newToken);
-    await AsyncStorage.setItem(TOKEN_KEY, newToken);
+    await secureStorage.setItem(TOKEN_KEY, newToken);
   }
 
   const value: AuthContextValue = {
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     async logout() {
       setToken(null);
-      await AsyncStorage.removeItem(TOKEN_KEY);
+      await secureStorage.removeItem(TOKEN_KEY);
     },
   };
 
