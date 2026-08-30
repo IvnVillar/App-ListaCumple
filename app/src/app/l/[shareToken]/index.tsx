@@ -116,6 +116,11 @@ export default function VisitorListScreen() {
       <FlatList
         data={list.items}
         keyExtractor={(item) => item.id}
+        ListEmptyComponent={
+          <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 40 }}>
+            Esta lista todavía no tiene artículos.
+          </Text>
+        }
         renderItem={({ item }) => (
           <View style={shared.card}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
