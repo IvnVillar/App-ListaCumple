@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "../db";
 import type { ListRow, OwnerItemRow, OccasionType } from "../domain/types";
+import type { ExtractedMetadata } from "../types";
 
 export interface CreateListInput {
   title: string;
@@ -18,6 +19,65 @@ export interface CreateItemInput {
   storeName?: string | null;
   notes?: string | null;
   isGroupGift?: boolean;
+}
+
+export interface ManualItemFields {
+  title?: string;
+  image_url?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  source_url?: string | null;
+  store_name?: string | null;
+  notes?: string | null;
+  is_group_gift?: boolean;
+}
+
+/**
+ * Los datos extraídos vienen de HTML de terceros y no pasan por la
+ * validación de los campos manuales (zod, en la ruta) — se sanean aparte
+ * antes de fusionarse, para no guardar p.ej. una "moneda" de 8 caracteres
+ * o un precio negativo que un JSON-LD mal formado pudiera colar.
+ */
+export function sanitizeExtractedMetadata(extracted: ExtractedMetadata | null): ExtractedMetadata | null {
+  if (!extracted) return null;
+  const price =
+    extracted.price != null && Number.isFinite(extracted.price) && extracted.price >= 0
+      ? extracted.price
+      : null;
+  const currency = extracted.currency && /^[A-Za-z]{3}$/.test(extracted.currency) ? extracted.currency : null;
+  const store_name = extracted.store_name ? extracted.store_name.slice(0, 120) : null;
+  return { ...extracted, price, currency, store_name };
+}
+
+export type ResolvedItemFields = { ok: true; input: CreateItemInput } | { ok: false; reason: "missing_title" };
+
+/**
+ * Combina lo escrito a mano con lo extraído de una URL: cualquier campo
+ * enviado explícitamente en la petición gana sobre el extraído, así el
+ * cliente puede pegar un link y corregir campos en la misma llamada sin
+ * perder lo ya escrito (spec 5.2/7: la extracción nunca debe bloquear ni
+ * imponerse sobre una corrección manual).
+ */
+export function resolveItemFields(
+  manual: ManualItemFields,
+  extracted: ExtractedMetadata | null
+): ResolvedItemFields {
+  const title = manual.title ?? extracted?.title ?? null;
+  if (!title) return { ok: false, reason: "missing_title" };
+
+  return {
+    ok: true,
+    input: {
+      title,
+      imageUrl: manual.image_url !== undefined ? manual.image_url : (extracted?.image_url ?? null),
+      price: manual.price !== undefined ? manual.price : (extracted?.price ?? null),
+      currency: manual.currency !== undefined ? manual.currency : (extracted?.currency ?? null),
+      sourceUrl: manual.source_url ?? null,
+      storeName: manual.store_name !== undefined ? manual.store_name : (extracted?.store_name ?? null),
+      notes: manual.notes,
+      isGroupGift: manual.is_group_gift,
+    },
+  };
 }
 
 export async function createList(db: Db, ownerId: string, input: CreateListInput): Promise<ListRow> {

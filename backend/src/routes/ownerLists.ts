@@ -13,6 +13,8 @@ import {
   getItemsForOwner,
   getListForOwner,
   listListsForOwner,
+  resolveItemFields,
+  sanitizeExtractedMetadata,
   updateItem,
   type UpdateItemInput,
 } from "../services/ownerLists";
@@ -57,20 +59,6 @@ const updateItemSchema = z
     is_group_gift: z.boolean().optional(),
   })
   .refine((data) => Object.keys(data).length > 0, { message: "No hay ningún campo que actualizar" });
-
-// Los datos extraídos vienen de HTML de terceros y no pasan por createItemSchema
-// (que sólo valida los campos enviados a mano) — se sanean aparte antes de usarse,
-// para no guardar p.ej. una "moneda" de 8 caracteres o un precio negativo.
-function sanitizeExtracted(extracted: ExtractedMetadata | null) {
-  if (!extracted) return null;
-  const price =
-    extracted.price != null && Number.isFinite(extracted.price) && extracted.price >= 0
-      ? extracted.price
-      : null;
-  const currency = extracted.currency && /^[A-Za-z]{3}$/.test(extracted.currency) ? extracted.currency : null;
-  const store_name = extracted.store_name ? extracted.store_name.slice(0, 120) : null;
-  return { ...extracted, price, currency, store_name };
-}
 
 async function summarizeList(db: Db, listId: string) {
   const items = await getItemsForOwner(db, listId);
@@ -130,37 +118,25 @@ export function createOwnerListsRouter(db: Db, extractMetadata: MetadataExtracto
     }
     const manual = parsed.data;
 
-    // Campos extraídos de la URL como base; cualquier campo enviado a mano
-    // en la misma petición gana sobre lo extraído (permite revisar/corregir).
     let extracted: ExtractedMetadata | null = null;
     if (manual.source_url) {
       try {
-        extracted = sanitizeExtracted(await extractMetadata(manual.source_url));
+        extracted = sanitizeExtractedMetadata(await extractMetadata(manual.source_url));
       } catch (err) {
         if (!(err instanceof FetchError)) throw err;
         extracted = null;
       }
     }
 
-    const title = manual.title ?? extracted?.title ?? null;
-    if (!title) {
+    const resolved = resolveItemFields(manual, extracted);
+    if (!resolved.ok) {
       return res.status(422).json({
-        error:
-          "No se pudo extraer el título automáticamente. Indícalo manualmente.",
+        error: "No se pudo extraer el título automáticamente. Indícalo manualmente.",
         warnings: extracted?.warnings ?? [],
       });
     }
 
-    const item = await addItem(db, list.id, {
-      title,
-      imageUrl: manual.image_url !== undefined ? manual.image_url : extracted?.image_url ?? null,
-      price: manual.price !== undefined ? manual.price : extracted?.price ?? null,
-      currency: manual.currency !== undefined ? manual.currency : extracted?.currency ?? null,
-      sourceUrl: manual.source_url ?? null,
-      storeName: manual.store_name !== undefined ? manual.store_name : extracted?.store_name ?? null,
-      notes: manual.notes,
-      isGroupGift: manual.is_group_gift,
-    });
+    const item = await addItem(db, list.id, resolved.input);
 
     return res.status(201).json({
       ...item,
