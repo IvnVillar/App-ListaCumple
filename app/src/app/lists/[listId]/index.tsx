@@ -113,7 +113,10 @@ export default function ListDetailScreen() {
           </Text>
         }
         renderItem={({ item }) => (
-          <View style={[shared.card, { flexDirection: "row", alignItems: "center", gap: 12 }]}>
+          <TouchableOpacity
+            style={[shared.card, { flexDirection: "row", alignItems: "center", gap: 12 }]}
+            onPress={() => router.push(`/lists/${list.id}/items/${item.id}`)}
+          >
             {item.image_url && (
               <Image source={{ uri: item.image_url }} style={{ width: 48, height: 48, borderRadius: 8 }} />
             )}
@@ -135,10 +138,10 @@ export default function ListDetailScreen() {
                 {item.is_group_gift ? " · Bote común" : ""}
               </Text>
             </View>
-            <TouchableOpacity onPress={() => handleDeleteItem(item.id)}>
+            <TouchableOpacity onPress={() => handleDeleteItem(item.id)} hitSlop={8}>
               <Text style={{ color: colors.danger }}>Eliminar</Text>
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         )}
       />
 
