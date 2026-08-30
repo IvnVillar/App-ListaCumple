@@ -37,7 +37,12 @@ const createItemSchema = z
     title: z.string().trim().min(1).max(300).optional(),
     image_url: z.string().url().optional().nullable(),
     price: z.number().nonnegative().optional().nullable(),
-    currency: z.string().length(3).optional().nullable(),
+    currency: z
+      .string()
+      .length(3)
+      .transform((v) => v.toUpperCase())
+      .optional()
+      .nullable(),
     source_url: z.string().url().optional().nullable(),
     store_name: z.string().max(120).optional().nullable(),
     notes: z.string().max(1000).optional().nullable(),
@@ -52,7 +57,12 @@ const updateItemSchema = z
     title: z.string().trim().min(1).max(300).optional(),
     image_url: z.string().url().optional().nullable(),
     price: z.number().nonnegative().optional().nullable(),
-    currency: z.string().length(3).optional().nullable(),
+    currency: z
+      .string()
+      .length(3)
+      .transform((v) => v.toUpperCase())
+      .optional()
+      .nullable(),
     source_url: z.string().url().optional().nullable(),
     store_name: z.string().max(120).optional().nullable(),
     notes: z.string().max(1000).optional().nullable(),

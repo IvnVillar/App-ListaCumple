@@ -44,7 +44,8 @@ export function sanitizeExtractedMetadata(extracted: ExtractedMetadata | null): 
     extracted.price != null && Number.isFinite(extracted.price) && extracted.price >= 0
       ? extracted.price
       : null;
-  const currency = extracted.currency && /^[A-Za-z]{3}$/.test(extracted.currency) ? extracted.currency : null;
+  const currency =
+    extracted.currency && /^[A-Za-z]{3}$/.test(extracted.currency) ? extracted.currency.toUpperCase() : null;
   const store_name = extracted.store_name ? extracted.store_name.slice(0, 120) : null;
   return { ...extracted, price, currency, store_name };
 }

@@ -67,4 +67,9 @@ describe("sanitizeExtractedMetadata", () => {
   it("con null de entrada, devuelve null", () => {
     expect(sanitizeExtractedMetadata(null)).toBeNull();
   });
+
+  it("normaliza la moneda a mayúsculas", () => {
+    const sanitized = sanitizeExtractedMetadata({ ...baseExtracted, currency: "eur" });
+    expect(sanitized?.currency).toBe("EUR");
+  });
 });
