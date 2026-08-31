@@ -1,10 +1,10 @@
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { shared } from "@/lib/styles";
+import { colors, shared } from "@/lib/styles";
 
 export default function RegisterScreen() {
   const { register } = useAuth();
@@ -27,42 +27,66 @@ export default function RegisterScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={shared.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Text style={shared.title}>Crea tu cuenta</Text>
-      <Text style={shared.subtitle}>Solo la necesitas para crear y gestionar listas.</Text>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={shared.screen} keyboardShouldPersistTaps="handled">
+        <View style={{ alignItems: "center", marginTop: 24, marginBottom: 8 }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 24,
+              backgroundColor: colors.accentSoft,
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 20,
+            }}
+          >
+            <Text style={{ fontSize: 34 }}>✨</Text>
+          </View>
+        </View>
 
-      <Text style={shared.label}>Email</Text>
-      <FormInput
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        placeholder="tucorreo@ejemplo.com"
-      />
+        <Text style={[shared.title, { textAlign: "center" }]}>Crea tu cuenta</Text>
+        <Text style={[shared.subtitle, { textAlign: "center" }]}>
+          Solo la necesitas para crear y gestionar tus listas.
+        </Text>
 
-      <Text style={shared.label}>Contraseña</Text>
-      <FormInput
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        placeholder="Al menos 8 caracteres"
-      />
+        <Text style={shared.label}>Email</Text>
+        <FormInput
+          icon="mail-outline"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          placeholder="tucorreo@ejemplo.com"
+        />
 
-      {error && <Text style={shared.errorText}>{error}</Text>}
+        <Text style={shared.label}>Contraseña</Text>
+        <FormInput
+          icon="lock-closed-outline"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          placeholder="Al menos 8 caracteres"
+        />
 
-      <TouchableOpacity
-        style={[shared.button, submitting && shared.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={submitting || !email || password.length < 8}
-      >
-        <Text style={shared.buttonText}>{submitting ? "Creando..." : "Crear cuenta"}</Text>
-      </TouchableOpacity>
+        {error && <Text style={shared.errorText}>{error}</Text>}
 
-      <View style={{ marginTop: 24, alignItems: "center" }}>
-        <Link href="/login">
-          <Text>¿Ya tienes cuenta? Inicia sesión</Text>
-        </Link>
-      </View>
+        <TouchableOpacity
+          style={[shared.button, (submitting || !email || password.length < 8) && shared.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting || !email || password.length < 8}
+        >
+          <Text style={shared.buttonText}>{submitting ? "Creando..." : "Crear cuenta"}</Text>
+        </TouchableOpacity>
+
+        <View style={{ marginTop: 24, alignItems: "center" }}>
+          <Link href="/login">
+            <Text style={{ color: colors.textSecondary }}>
+              ¿Ya tienes cuenta? <Text style={{ color: colors.primary, fontWeight: "700" }}>Inicia sesión</Text>
+            </Text>
+          </Link>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

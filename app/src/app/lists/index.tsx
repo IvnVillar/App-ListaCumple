@@ -1,12 +1,13 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { OCCASION_LABELS } from "@/lib/occasions";
+import { OCCASION_EMOJI, OCCASION_LABELS } from "@/lib/occasions";
 import { useShareIntentContext } from "@/lib/shareIntent";
-import { colors, shared } from "@/lib/styles";
+import { colors, shared, spacing } from "@/lib/styles";
 
 export default function ListsScreen() {
   const { token, logout } = useAuth();
@@ -48,13 +49,29 @@ export default function ListsScreen() {
   if (loading && !lists) {
     return (
       <View style={shared.center}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
 
   return (
     <View style={shared.screen}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <View>
+          <Text style={shared.eyebrow}>Hola de nuevo</Text>
+          <Text style={shared.title}>Mis listas</Text>
+        </View>
+        <TouchableOpacity
+          style={shared.iconCircle}
+          onPress={async () => {
+            await logout();
+            router.replace("/login");
+          }}
+        >
+          <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+
       {loadError && (
         <TouchableOpacity onPress={load}>
           <Text style={[shared.errorText, { textAlign: "center" }]}>{loadError} · Reintentar</Text>
@@ -64,35 +81,51 @@ export default function ListsScreen() {
       <FlatList
         data={lists ?? []}
         keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: 100 }}
         ListEmptyComponent={
           !loadError ? (
-            <Text style={{ color: colors.textSecondary, textAlign: "center", marginTop: 40 }}>
-              Aún no tienes listas. Crea la primera.
-            </Text>
+            <View style={{ alignItems: "center", marginTop: 60 }}>
+              <Text style={{ fontSize: 48, marginBottom: spacing.md }}>🎁</Text>
+              <Text style={{ color: colors.text, fontWeight: "700", fontSize: 16, marginBottom: 4 }}>
+                Aún no tienes listas
+              </Text>
+              <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
+                Crea la primera y empieza a añadir cosas que te harían ilusión.
+              </Text>
+            </View>
           ) : null
         }
         renderItem={({ item }) => (
-          <TouchableOpacity style={shared.card} onPress={() => router.push(`/lists/${item.id}`)}>
-            <Text style={{ fontSize: 17, fontWeight: "600", color: colors.text }}>{item.title}</Text>
-            <Text style={{ color: colors.textSecondary, marginTop: 4 }}>
-              {OCCASION_LABELS[item.occasion_type]}
-            </Text>
+          <TouchableOpacity
+            style={[shared.card, { flexDirection: "row", alignItems: "center", gap: spacing.md }]}
+            onPress={() => router.push(`/lists/${item.id}`)}
+            activeOpacity={0.7}
+          >
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 16,
+                backgroundColor: colors.card,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ fontSize: 22 }}>{OCCASION_EMOJI[item.occasion_type]}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text }}>{item.title}</Text>
+              <Text style={{ color: colors.textSecondary, marginTop: 2, fontSize: 13 }}>
+                {OCCASION_LABELS[item.occasion_type]}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
           </TouchableOpacity>
         )}
       />
 
-      <TouchableOpacity style={shared.button} onPress={() => router.push("/lists/new")}>
-        <Text style={shared.buttonText}>+ Nueva lista</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={shared.secondaryButton}
-        onPress={async () => {
-          await logout();
-          router.replace("/login");
-        }}
-      >
-        <Text style={shared.secondaryButtonText}>Cerrar sesión</Text>
+      <TouchableOpacity style={shared.fab} onPress={() => router.push("/lists/new")} activeOpacity={0.85}>
+        <Ionicons name="add" size={30} color={colors.primaryText} />
       </TouchableOpacity>
     </View>
   );

@@ -8,6 +8,14 @@ export const OCCASION_LABELS: Record<OccasionType, string> = {
   puntual: "Ocasión puntual",
 };
 
-export const OCCASIONS: { value: OccasionType; label: string }[] = (
+export const OCCASION_EMOJI: Record<OccasionType, string> = {
+  cumpleanos: "🎂",
+  boda: "💍",
+  baby_shower: "🧸",
+  navidad: "🎄",
+  puntual: "🎉",
+};
+
+export const OCCASIONS: { value: OccasionType; label: string; emoji: string }[] = (
   Object.entries(OCCASION_LABELS) as [OccasionType, string][]
-).map(([value, label]) => ({ value, label }));
+).map(([value, label]) => ({ value, label, emoji: OCCASION_EMOJI[value] }));

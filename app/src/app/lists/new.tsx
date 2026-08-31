@@ -6,7 +6,7 @@ import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { OCCASIONS } from "@/lib/occasions";
-import { colors, shared } from "@/lib/styles";
+import { shared } from "@/lib/styles";
 
 export default function NewListScreen() {
   const { token } = useAuth();
@@ -44,9 +44,11 @@ export default function NewListScreen() {
   }
 
   return (
-    <ScrollView style={shared.screen}>
+    <ScrollView contentContainerStyle={shared.screen}>
+      <Text style={[shared.subtitle, { marginTop: 4 }]}>Dale un nombre y elige para qué ocasión es.</Text>
+
       <Text style={shared.label}>Título</Text>
-      <FormInput value={title} onChangeText={setTitle} placeholder="Cumple de Marta" />
+      <FormInput icon="pricetag-outline" value={title} onChangeText={setTitle} placeholder="Cumple de Marta" />
 
       <Text style={shared.label}>Ocasión</Text>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
@@ -54,27 +56,23 @@ export default function NewListScreen() {
           <TouchableOpacity
             key={o.value}
             onPress={() => setOccasion(o.value)}
-            style={{
-              paddingHorizontal: 14,
-              paddingVertical: 8,
-              borderRadius: 20,
-              backgroundColor: occasion === o.value ? colors.primary : colors.card,
-            }}
+            style={[shared.chip, occasion === o.value && shared.chipActive]}
+            activeOpacity={0.7}
           >
-            <Text style={{ color: occasion === o.value ? colors.primaryText : colors.text }}>
-              {o.label}
-            </Text>
+            <Text>{o.emoji}</Text>
+            <Text style={[shared.chipText, occasion === o.value && shared.chipTextActive]}>{o.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
 
       <Text style={shared.label}>Fecha del evento (opcional, AAAA-MM-DD)</Text>
-      <FormInput value={eventDate} onChangeText={setEventDate} placeholder="2026-12-24" />
+      <FormInput icon="calendar-outline" value={eventDate} onChangeText={setEventDate} placeholder="2026-12-24" />
 
       {occasion === "puntual" && (
         <>
           <Text style={shared.label}>El enlace caduca a los N días del evento (opcional)</Text>
           <FormInput
+            icon="time-outline"
             value={expiryDays}
             onChangeText={setExpiryDays}
             keyboardType="number-pad"
@@ -86,7 +84,7 @@ export default function NewListScreen() {
       {error && <Text style={shared.errorText}>{error}</Text>}
 
       <TouchableOpacity
-        style={[shared.button, submitting && shared.buttonDisabled]}
+        style={[shared.button, (submitting || !title.trim()) && shared.buttonDisabled]}
         onPress={handleSubmit}
         disabled={submitting || !title.trim()}
       >

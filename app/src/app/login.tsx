@@ -1,10 +1,10 @@
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Text, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { shared } from "@/lib/styles";
+import { colors, shared } from "@/lib/styles";
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -27,37 +27,60 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={shared.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Text style={shared.title}>Inicia sesión</Text>
-      <Text style={shared.subtitle}>Accede para gestionar tus listas de deseos.</Text>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={shared.screen} keyboardShouldPersistTaps="handled">
+        <View style={{ alignItems: "center", marginTop: 24, marginBottom: 8 }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: 24,
+              backgroundColor: colors.primarySoft,
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 20,
+            }}
+          >
+            <Text style={{ fontSize: 34 }}>🎁</Text>
+          </View>
+        </View>
 
-      <Text style={shared.label}>Email</Text>
-      <FormInput
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-        placeholder="tucorreo@ejemplo.com"
-      />
+        <Text style={[shared.title, { textAlign: "center" }]}>Bienvenido de vuelta</Text>
+        <Text style={[shared.subtitle, { textAlign: "center" }]}>
+          Inicia sesión para gestionar tus listas de deseos.
+        </Text>
 
-      <Text style={shared.label}>Contraseña</Text>
-      <FormInput value={password} onChangeText={setPassword} secureTextEntry />
+        <Text style={shared.label}>Email</Text>
+        <FormInput
+          icon="mail-outline"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          placeholder="tucorreo@ejemplo.com"
+        />
 
-      {error && <Text style={shared.errorText}>{error}</Text>}
+        <Text style={shared.label}>Contraseña</Text>
+        <FormInput icon="lock-closed-outline" value={password} onChangeText={setPassword} secureTextEntry />
 
-      <TouchableOpacity
-        style={[shared.button, submitting && shared.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={submitting || !email || !password}
-      >
-        <Text style={shared.buttonText}>{submitting ? "Entrando..." : "Entrar"}</Text>
-      </TouchableOpacity>
+        {error && <Text style={shared.errorText}>{error}</Text>}
 
-      <View style={{ marginTop: 24, alignItems: "center" }}>
-        <Link href="/register">
-          <Text>¿No tienes cuenta? Crea una</Text>
-        </Link>
-      </View>
+        <TouchableOpacity
+          style={[shared.button, (submitting || !email || !password) && shared.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={submitting || !email || !password}
+        >
+          <Text style={shared.buttonText}>{submitting ? "Entrando..." : "Entrar"}</Text>
+        </TouchableOpacity>
+
+        <View style={{ marginTop: 24, alignItems: "center" }}>
+          <Link href="/register">
+            <Text style={{ color: colors.textSecondary }}>
+              ¿No tienes cuenta? <Text style={{ color: colors.primary, fontWeight: "700" }}>Crea una</Text>
+            </Text>
+          </Link>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

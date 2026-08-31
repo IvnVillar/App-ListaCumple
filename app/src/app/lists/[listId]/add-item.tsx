@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
@@ -5,7 +6,7 @@ import { FormInput } from "@/components/form-input";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { colors, shared } from "@/lib/styles";
+import { colors, shared, spacing } from "@/lib/styles";
 
 type Mode = "url" | "manual";
 
@@ -97,21 +98,18 @@ export default function AddItemScreen() {
   const canSubmit = mode === "manual" ? title.trim().length > 0 : hasExtracted && title.trim().length > 0;
 
   return (
-    <ScrollView style={shared.screen}>
-      <View style={{ flexDirection: "row", gap: 8, marginBottom: 8 }}>
+    <ScrollView contentContainerStyle={shared.screen}>
+      <View style={{ flexDirection: "row", gap: spacing.sm, marginBottom: spacing.sm }}>
         <TouchableOpacity
           onPress={() => setMode("url")}
-          style={{
-            flex: 1,
-            paddingVertical: 10,
-            borderRadius: 10,
-            alignItems: "center",
-            backgroundColor: mode === "url" ? colors.primary : colors.card,
-          }}
+          style={[
+            shared.chip,
+            { flex: 1, justifyContent: "center" },
+            mode === "url" && shared.chipActive,
+          ]}
         >
-          <Text style={{ color: mode === "url" ? colors.primaryText : colors.text, fontWeight: "600" }}>
-            Pegar enlace
-          </Text>
+          <Ionicons name="link-outline" size={15} color={mode === "url" ? colors.primaryDark : colors.text} />
+          <Text style={[shared.chipText, mode === "url" && shared.chipTextActive]}>Pegar enlace</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => {
@@ -120,17 +118,14 @@ export default function AddItemScreen() {
             if (sourceUrl.trim() && !manualLink.trim()) setManualLink(sourceUrl.trim());
             setMode("manual");
           }}
-          style={{
-            flex: 1,
-            paddingVertical: 10,
-            borderRadius: 10,
-            alignItems: "center",
-            backgroundColor: mode === "manual" ? colors.primary : colors.card,
-          }}
+          style={[
+            shared.chip,
+            { flex: 1, justifyContent: "center" },
+            mode === "manual" && shared.chipActive,
+          ]}
         >
-          <Text style={{ color: mode === "manual" ? colors.primaryText : colors.text, fontWeight: "600" }}>
-            Manual
-          </Text>
+          <Ionicons name="create-outline" size={15} color={mode === "manual" ? colors.primaryDark : colors.text} />
+          <Text style={[shared.chipText, mode === "manual" && shared.chipTextActive]}>Manual</Text>
         </TouchableOpacity>
       </View>
 
@@ -138,6 +133,7 @@ export default function AddItemScreen() {
         <>
           <Text style={shared.label}>URL del producto</Text>
           <FormInput
+            icon="link-outline"
             value={sourceUrl}
             onChangeText={(text) => {
               setSourceUrl(text);
@@ -153,9 +149,12 @@ export default function AddItemScreen() {
             disabled={!sourceUrl.trim() || extracting}
           >
             {extracting ? (
-              <ActivityIndicator />
+              <ActivityIndicator color={colors.primary} />
             ) : (
-              <Text style={shared.secondaryButtonText}>Extraer información</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Ionicons name="sparkles-outline" size={16} color={colors.text} />
+                <Text style={shared.secondaryButtonText}>Extraer información</Text>
+              </View>
             )}
           </TouchableOpacity>
           {extractionWarnings.length > 0 && (
@@ -169,15 +168,22 @@ export default function AddItemScreen() {
       {(mode === "manual" || hasExtracted) && (
         <>
           <Text style={shared.label}>Título</Text>
-          <FormInput value={title} onChangeText={setTitle} placeholder="Nombre del artículo" />
+          <FormInput icon="pricetag-outline" value={title} onChangeText={setTitle} placeholder="Nombre del artículo" />
 
           <Text style={shared.label}>Precio</Text>
-          <FormInput value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="29.99" />
+          <FormInput
+            icon="cash-outline"
+            value={price}
+            onChangeText={setPrice}
+            keyboardType="decimal-pad"
+            placeholder="29.99"
+          />
 
           {mode === "manual" && (
             <>
               <Text style={shared.label}>Link (opcional)</Text>
               <FormInput
+                icon="link-outline"
                 value={manualLink}
                 onChangeText={setManualLink}
                 autoCapitalize="none"
@@ -188,20 +194,43 @@ export default function AddItemScreen() {
           )}
 
           <Text style={shared.label}>Moneda</Text>
-          <FormInput value={currency} onChangeText={setCurrency} placeholder="EUR" autoCapitalize="characters" maxLength={3} />
+          <FormInput
+            value={currency}
+            onChangeText={setCurrency}
+            placeholder="EUR"
+            autoCapitalize="characters"
+            maxLength={3}
+          />
 
           <Text style={shared.label}>Imagen (URL)</Text>
-          <FormInput value={imageUrl} onChangeText={setImageUrl} autoCapitalize="none" placeholder="https://..." />
+          <FormInput icon="image-outline" value={imageUrl} onChangeText={setImageUrl} autoCapitalize="none" placeholder="https://..." />
 
           <Text style={shared.label}>Tienda</Text>
-          <FormInput value={storeName} onChangeText={setStoreName} placeholder="Amazon" />
+          <FormInput icon="storefront-outline" value={storeName} onChangeText={setStoreName} placeholder="Amazon" />
 
           <Text style={shared.label}>Nota</Text>
-          <FormInput value={notes} onChangeText={setNotes} placeholder="Talla M, color azul..." />
+          <FormInput icon="chatbox-ellipses-outline" value={notes} onChangeText={setNotes} placeholder="Talla M, color azul..." />
 
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 20 }}>
-            <Text style={{ color: colors.text, fontSize: 15 }}>Bote común (regalo colectivo)</Text>
-            <Switch value={isGroupGift} onValueChange={setIsGroupGift} />
+          <View
+            style={[
+              shared.card,
+              { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.xl },
+            ]}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 }}>
+              <Text style={{ fontSize: 18 }}>💰</Text>
+              <Text style={{ color: colors.text, fontSize: 15, fontWeight: "600", flex: 1 }}>
+                Bote común{"\n"}
+                <Text style={{ fontSize: 12, fontWeight: "400", color: colors.textSecondary }}>
+                  varias personas aportan
+                </Text>
+              </Text>
+            </View>
+            <Switch
+              value={isGroupGift}
+              onValueChange={setIsGroupGift}
+              trackColor={{ true: colors.primary, false: colors.border }}
+            />
           </View>
         </>
       )}

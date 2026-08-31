@@ -5,7 +5,7 @@ import { FormInput } from "@/components/form-input";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { colors, shared } from "@/lib/styles";
+import { colors, shared, spacing } from "@/lib/styles";
 
 export default function EditItemScreen() {
   const { listId, itemId } = useLocalSearchParams<{ listId: string; itemId: string }>();
@@ -81,7 +81,7 @@ export default function EditItemScreen() {
   if (loading) {
     return (
       <View style={shared.center}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -95,12 +95,12 @@ export default function EditItemScreen() {
   }
 
   return (
-    <ScrollView style={shared.screen}>
+    <ScrollView contentContainerStyle={shared.screen}>
       <Text style={shared.label}>Título</Text>
-      <FormInput value={title} onChangeText={setTitle} placeholder="Nombre del artículo" />
+      <FormInput icon="pricetag-outline" value={title} onChangeText={setTitle} placeholder="Nombre del artículo" />
 
       <Text style={shared.label}>Precio</Text>
-      <FormInput value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="29.99" />
+      <FormInput icon="cash-outline" value={price} onChangeText={setPrice} keyboardType="decimal-pad" placeholder="29.99" />
 
       <Text style={shared.label}>Moneda</Text>
       <FormInput
@@ -112,17 +112,34 @@ export default function EditItemScreen() {
       />
 
       <Text style={shared.label}>Imagen (URL)</Text>
-      <FormInput value={imageUrl} onChangeText={setImageUrl} autoCapitalize="none" placeholder="https://..." />
+      <FormInput icon="image-outline" value={imageUrl} onChangeText={setImageUrl} autoCapitalize="none" placeholder="https://..." />
 
       <Text style={shared.label}>Tienda</Text>
-      <FormInput value={storeName} onChangeText={setStoreName} placeholder="Amazon" />
+      <FormInput icon="storefront-outline" value={storeName} onChangeText={setStoreName} placeholder="Amazon" />
 
       <Text style={shared.label}>Nota</Text>
-      <FormInput value={notes} onChangeText={setNotes} placeholder="Talla M, color azul..." />
+      <FormInput icon="chatbox-ellipses-outline" value={notes} onChangeText={setNotes} placeholder="Talla M, color azul..." />
 
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 20 }}>
-        <Text style={{ color: colors.text, fontSize: 15 }}>Bote común (regalo colectivo)</Text>
-        <Switch value={isGroupGift} onValueChange={setIsGroupGift} />
+      <View
+        style={[
+          shared.card,
+          { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: spacing.xl },
+        ]}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 }}>
+          <Text style={{ fontSize: 18 }}>💰</Text>
+          <Text style={{ color: colors.text, fontSize: 15, fontWeight: "600", flex: 1 }}>
+            Bote común{"\n"}
+            <Text style={{ fontSize: 12, fontWeight: "400", color: colors.textSecondary }}>
+              varias personas aportan
+            </Text>
+          </Text>
+        </View>
+        <Switch
+          value={isGroupGift}
+          onValueChange={setIsGroupGift}
+          trackColor={{ true: colors.primary, false: colors.border }}
+        />
       </View>
 
       {error && <Text style={shared.errorText}>{error}</Text>}
