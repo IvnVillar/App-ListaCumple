@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "../db";
 import type { ItemRow, ListRow } from "../domain/types";
+import { normalizeListRow } from "../domain/normalizeListRow";
 
 export class ConflictError extends Error {}
 export class NotFoundError extends Error {}
@@ -66,7 +67,7 @@ async function assertListActive(db: Db, shareToken: string): Promise<ListRow> {
   if (list.expires_at && new Date(list.expires_at).getTime() < Date.now()) {
     throw new ExpiredError("Este enlace ha caducado");
   }
-  return list;
+  return normalizeListRow(list);
 }
 
 export async function getListForVisitor(

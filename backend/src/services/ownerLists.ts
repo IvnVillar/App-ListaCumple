@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "../db";
 import type { ListRow, OwnerItemRow, OccasionType } from "../domain/types";
+import { normalizeListRow } from "../domain/normalizeListRow";
 import type { ExtractedMetadata } from "../types";
 
 export interface CreateListInput {
@@ -90,7 +91,7 @@ export async function createList(db: Db, ownerId: string, input: CreateListInput
      RETURNING *`,
     [id, ownerId, input.title, input.occasionType, input.eventDate ?? null, input.expiresAt ?? null, shareToken]
   );
-  return result.rows[0];
+  return normalizeListRow(result.rows[0]);
 }
 
 export async function listListsForOwner(db: Db, ownerId: string): Promise<ListRow[]> {
@@ -98,7 +99,7 @@ export async function listListsForOwner(db: Db, ownerId: string): Promise<ListRo
     "SELECT * FROM lists WHERE owner_id = $1 ORDER BY created_at DESC",
     [ownerId]
   );
-  return result.rows;
+  return result.rows.map(normalizeListRow);
 }
 
 export async function getListForOwner(db: Db, ownerId: string, listId: string): Promise<ListRow | null> {
@@ -106,7 +107,8 @@ export async function getListForOwner(db: Db, ownerId: string, listId: string): 
     listId,
     ownerId,
   ]);
-  return result.rows[0] ?? null;
+  const row = result.rows[0];
+  return row ? normalizeListRow(row) : null;
 }
 
 export async function deleteList(db: Db, ownerId: string, listId: string): Promise<boolean> {

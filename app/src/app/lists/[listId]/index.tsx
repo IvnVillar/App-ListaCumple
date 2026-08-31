@@ -15,6 +15,7 @@ import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { APP_BASE_URL } from "@/lib/config";
+import { formatEventDate } from "@/lib/date";
 import { colors, shared } from "@/lib/styles";
 
 function shareUrl(shareToken: string): string {
@@ -105,6 +106,9 @@ export default function ListDetailScreen() {
   return (
     <View style={shared.screen}>
       <Text style={shared.title}>{list.title}</Text>
+      {formatEventDate(list.event_date) && (
+        <Text style={{ color: colors.textSecondary, marginBottom: 4 }}>{formatEventDate(list.event_date)}</Text>
+      )}
       <Text style={shared.subtitle}>
         {list.items_with_destination} de {list.items_total} artículos ya tienen destino
       </Text>

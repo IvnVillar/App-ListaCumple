@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from
 import { FormInput } from "@/components/form-input";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
+import { formatEventDate } from "@/lib/date";
 import { OCCASION_LABELS } from "@/lib/occasions";
 import { colors, shared } from "@/lib/styles";
 
@@ -114,7 +115,10 @@ export default function VisitorListScreen() {
   return (
     <View style={shared.screen}>
       <Text style={shared.title}>{list.title}</Text>
-      <Text style={shared.subtitle}>{OCCASION_LABELS[list.occasion_type]}</Text>
+      <Text style={shared.subtitle}>
+        {OCCASION_LABELS[list.occasion_type]}
+        {formatEventDate(list.event_date) ? ` · ${formatEventDate(list.event_date)}` : ""}
+      </Text>
 
       <FlatList
         data={list.items}
