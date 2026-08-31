@@ -9,15 +9,18 @@ import { colors, shared } from "@/lib/styles";
 export default function RegisterScreen() {
   const { register } = useAuth();
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const usernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(username.trim());
 
   async function handleSubmit() {
     setError(null);
     setSubmitting(true);
     try {
-      await register(email.trim(), password);
+      await register(email.trim(), username.trim(), password);
       router.replace("/home");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo crear la cuenta");
@@ -60,6 +63,15 @@ export default function RegisterScreen() {
           placeholder="tucorreo@ejemplo.com"
         />
 
+        <Text style={shared.label}>Nombre de usuario</Text>
+        <FormInput
+          icon="at-outline"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="none"
+          placeholder="Para que tus amigos te encuentren"
+        />
+
         <Text style={shared.label}>Contraseña</Text>
         <FormInput
           icon="lock-closed-outline"
@@ -72,9 +84,12 @@ export default function RegisterScreen() {
         {error && <Text style={shared.errorText}>{error}</Text>}
 
         <TouchableOpacity
-          style={[shared.button, (submitting || !email || password.length < 8) && shared.buttonDisabled]}
+          style={[
+            shared.button,
+            (submitting || !email || !usernameValid || password.length < 8) && shared.buttonDisabled,
+          ]}
           onPress={handleSubmit}
-          disabled={submitting || !email || password.length < 8}
+          disabled={submitting || !email || !usernameValid || password.length < 8}
         >
           <Text style={shared.buttonText}>{submitting ? "Creando..." : "Crear cuenta"}</Text>
         </TouchableOpacity>

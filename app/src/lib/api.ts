@@ -31,12 +31,13 @@ async function request<T>(path: string, options: RequestInit & { token?: string 
 
 export interface AuthResponse {
   token: string;
+  username: string;
 }
 
-export function register(email: string, password: string) {
+export function register(email: string, username: string, password: string) {
   return request<AuthResponse>("/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, username, password }),
   });
 }
 
@@ -190,4 +191,58 @@ export function contributeToItem(shareToken: string, itemId: string, alias: stri
     method: "POST",
     body: JSON.stringify({ alias, amount }),
   });
+}
+
+export interface Friend {
+  friendship_id: string;
+  user_id: string;
+  username: string;
+}
+
+export interface FriendRequest {
+  id: string;
+  user_id: string;
+  username: string;
+  created_at: string;
+}
+
+export interface Friendship {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: "pending" | "accepted";
+  created_at: string;
+  responded_at: string | null;
+}
+
+export function listFriends(token: string) {
+  return request<Friend[]>("/api/friends", { token });
+}
+
+export function listFriendRequests(token: string) {
+  return request<{ incoming: FriendRequest[]; outgoing: FriendRequest[] }>("/api/friends/requests", { token });
+}
+
+export function sendFriendRequest(token: string, username: string) {
+  return request<{ status: "pending" | "accepted"; friendship: Friendship }>("/api/friends/requests", {
+    method: "POST",
+    token,
+    body: JSON.stringify({ username }),
+  });
+}
+
+export function acceptFriendRequest(token: string, requestId: string) {
+  return request<Friendship>(`/api/friends/requests/${requestId}/accept`, { method: "POST", token });
+}
+
+export function rejectFriendRequest(token: string, requestId: string) {
+  return request<void>(`/api/friends/requests/${requestId}`, { method: "DELETE", token });
+}
+
+export function removeFriendship(token: string, friendshipId: string) {
+  return request<void>(`/api/friends/${friendshipId}`, { method: "DELETE", token });
+}
+
+export function getFriendLists(token: string, friendUserId: string) {
+  return request<ListSummary[]>(`/api/friends/${friendUserId}/lists`, { token });
 }

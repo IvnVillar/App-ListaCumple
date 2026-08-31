@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { colors, shared, spacing } from "@/lib/styles";
 
 export default function SettingsScreen() {
-  const { email, logout } = useAuth();
+  const { email, username, logout } = useAuth();
 
   async function handleLogout() {
     await logout();
@@ -25,6 +25,18 @@ export default function SettingsScreen() {
           <Text style={{ fontSize: 12, color: colors.textSecondary }}>Sesión iniciada como</Text>
           <Text style={{ fontWeight: "700", color: colors.text }} numberOfLines={1}>
             {email ?? "—"}
+          </Text>
+        </View>
+      </View>
+
+      <View style={[shared.card, { flexDirection: "row", alignItems: "center", gap: spacing.md }]}>
+        <View style={shared.iconCircle}>
+          <Ionicons name="at-outline" size={20} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Tu usuario (para que te añadan)</Text>
+          <Text style={{ fontWeight: "700", color: colors.text }} numberOfLines={1}>
+            {username ? `@${username}` : "—"}
           </Text>
         </View>
       </View>
