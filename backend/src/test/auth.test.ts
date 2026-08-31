@@ -13,7 +13,7 @@ describe("Autenticación", () => {
   it("registra un usuario y devuelve un token utilizable", async () => {
     const register = await request(app)
       .post("/api/auth/register")
-      .send({ email: "ana@example.com", password: "supersecret" });
+      .send({ email: "ana@example.com", username: "ana", password: "supersecret" });
 
     expect(register.status).toBe(201);
     expect(register.body.token).toBeTruthy();
@@ -26,18 +26,47 @@ describe("Autenticación", () => {
   });
 
   it("no permite registrar el mismo email dos veces", async () => {
-    await request(app).post("/api/auth/register").send({ email: "ana@example.com", password: "supersecret" });
+    await request(app)
+      .post("/api/auth/register")
+      .send({ email: "ana@example.com", username: "ana", password: "supersecret" });
     const second = await request(app)
       .post("/api/auth/register")
-      .send({ email: "ana@example.com", password: "otrapass123" });
+      .send({ email: "ana@example.com", username: "ana2", password: "otrapass123" });
 
     expect(second.status).toBe(409);
   });
 
+  it("no permite registrar el mismo nombre de usuario dos veces, aunque el email sea distinto", async () => {
+    await request(app)
+      .post("/api/auth/register")
+      .send({ email: "ana@example.com", username: "ana", password: "supersecret" });
+    const second = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "otra@example.com", username: "ana", password: "otrapass123" });
+
+    expect(second.status).toBe(409);
+  });
+
+  it("rechaza un registro sin nombre de usuario o con un formato inválido", async () => {
+    const missing = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "ana@example.com", password: "supersecret" });
+    expect(missing.status).toBe(400);
+
+    const invalid = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "ana@example.com", username: "a", password: "supersecret" });
+    expect(invalid.status).toBe(400);
+  });
+
   it("dos registros simultáneos con el mismo email no provocan un 500 (condición de carrera)", async () => {
     const [first, second] = await Promise.all([
-      request(app).post("/api/auth/register").send({ email: "carrera@example.com", password: "supersecret" }),
-      request(app).post("/api/auth/register").send({ email: "carrera@example.com", password: "otrapass123" }),
+      request(app)
+        .post("/api/auth/register")
+        .send({ email: "carrera@example.com", username: "carrera1", password: "supersecret" }),
+      request(app)
+        .post("/api/auth/register")
+        .send({ email: "carrera@example.com", username: "carrera2", password: "otrapass123" }),
     ]);
 
     const statuses = [first.status, second.status].sort();
@@ -45,7 +74,9 @@ describe("Autenticación", () => {
   });
 
   it("rechaza login con contraseña incorrecta", async () => {
-    await request(app).post("/api/auth/register").send({ email: "ana@example.com", password: "supersecret" });
+    await request(app)
+      .post("/api/auth/register")
+      .send({ email: "ana@example.com", username: "ana", password: "supersecret" });
     const login = await request(app)
       .post("/api/auth/login")
       .send({ email: "ana@example.com", password: "incorrecta" });

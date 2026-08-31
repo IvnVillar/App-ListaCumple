@@ -5,6 +5,15 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- `username` llegó después de que ya hubiera cuentas reales en producción, así
+-- que CREATE TABLE IF NOT EXISTS no lo habría añadido a una tabla existente.
+-- Se aplica con ALTER, rellenando primero cualquier fila que aún no tenga uno
+-- antes de exigir NOT NULL — reaplicar esto en cada arranque es idempotente.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
+UPDATE users SET username = 'user_' || substr(replace(id::text, '-', ''), 1, 8) WHERE username IS NULL;
+ALTER TABLE users ALTER COLUMN username SET NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_unique ON users (username);
+
 CREATE TABLE IF NOT EXISTS lists (
   id UUID PRIMARY KEY,
   owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -55,3 +64,22 @@ CREATE TABLE IF NOT EXISTS contributions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_contributions_reservation_id ON contributions(reservation_id);
+
+CREATE TABLE IF NOT EXISTS friendships (
+  id UUID PRIMARY KEY,
+  requester_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  addressee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  responded_at TIMESTAMPTZ,
+  CHECK (requester_id <> addressee_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_friendships_requester_id ON friendships(requester_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_addressee_id ON friendships(addressee_id);
+
+-- Solo puede existir una relación por pareja de usuarios, sin importar quién
+-- fue el que la inició — evita que dos solicitudes cruzadas simultáneas
+-- (A->B y B->A) dejen dos filas en vez de una.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_friendships_unique_pair
+  ON friendships (LEAST(requester_id, addressee_id), GREATEST(requester_id, addressee_id));

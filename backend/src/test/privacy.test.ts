@@ -28,7 +28,7 @@ describe("Aislamiento owner/visitor (spec sección 4 y 7)", () => {
 
     const register = await request(app)
       .post("/api/auth/register")
-      .send({ email: "owner@example.com", password: "supersecret" });
+      .send({ email: "owner@example.com", username: "owner", password: "supersecret" });
     ownerToken = register.body.token;
 
     const list = await request(app)
@@ -136,7 +136,7 @@ describe("Aislamiento owner/visitor (spec sección 4 y 7)", () => {
   it("otro usuario no puede ver ni borrar la lista de otro dueño", async () => {
     const otherRegister = await request(app)
       .post("/api/auth/register")
-      .send({ email: "otro@example.com", password: "supersecret" });
+      .send({ email: "otro@example.com", username: "otro", password: "supersecret" });
     const otherToken = otherRegister.body.token;
 
     const getAsOther = await request(app)

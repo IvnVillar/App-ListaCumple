@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Db } from "../db";
 import { hashPassword, verifyPassword } from "../auth/password";
 import { signToken } from "../auth/jwt";
+import { usernameSchema } from "../domain/username";
 import { isUniqueViolation } from "../db/pgErrors";
 
 const credentialsSchema = z.object({
@@ -11,8 +12,11 @@ const credentialsSchema = z.object({
   password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
 });
 
+const registerSchema = credentialsSchema.extend({ username: usernameSchema });
+
 interface UserRow {
   id: string;
+  username: string;
   password_hash: string;
 }
 
@@ -20,37 +24,49 @@ export function createAuthRouter(db: Db): Router {
   const router = Router();
 
   router.post("/register", async (req, res) => {
-    const parsed = credentialsSchema.safeParse(req.body);
+    const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0].message });
     }
-    const { email, password } = parsed.data;
+    const { email, username, password } = parsed.data;
 
-    const existing = await db.query<{ id: string }>("SELECT id FROM users WHERE email = $1", [email]);
-    if (existing.rows.length > 0) {
-      return res.status(409).json({ error: "Ya existe una cuenta con ese email" });
+    const existing = await db.query<{ email: string; username: string }>(
+      "SELECT email, username FROM users WHERE email = $1 OR username = $2",
+      [email, username]
+    );
+    const conflict = existing.rows[0];
+    if (conflict) {
+      const emailTaken = conflict.email === email;
+      return res
+        .status(409)
+        .json({ error: emailTaken ? "Ya existe una cuenta con ese email" : "Ese nombre de usuario ya está en uso" });
     }
 
     const id = randomUUID();
     const passwordHash = await hashPassword(password);
     try {
-      await db.query("INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)", [
+      await db.query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)", [
         id,
         email,
+        username,
         passwordHash,
       ]);
     } catch (err) {
       // La comprobación SELECT de arriba no es atómica: dos registros con el
-      // mismo email a la vez pueden pasarla ambos y chocar aquí contra el
-      // UNIQUE de la columna — sin este catch, el segundo devolvía un 500.
+      // mismo email o usuario a la vez pueden pasarla ambos y chocar aquí
+      // contra el UNIQUE de la columna — sin este catch, el segundo devolvía un 500.
       if (isUniqueViolation(err)) {
-        return res.status(409).json({ error: "Ya existe una cuenta con ese email" });
+        const constraint = (err as { constraint?: string }).constraint ?? "";
+        const emailTaken = constraint.includes("email");
+        return res
+          .status(409)
+          .json({ error: emailTaken ? "Ya existe una cuenta con ese email" : "Ese nombre de usuario ya está en uso" });
       }
       throw err;
     }
 
     const token = signToken({ userId: id });
-    return res.status(201).json({ token });
+    return res.status(201).json({ token, username });
   });
 
   router.post("/login", async (req, res) => {
@@ -60,7 +76,7 @@ export function createAuthRouter(db: Db): Router {
     }
     const { email, password } = parsed.data;
 
-    const result = await db.query<UserRow>("SELECT id, password_hash FROM users WHERE email = $1", [
+    const result = await db.query<UserRow>("SELECT id, username, password_hash FROM users WHERE email = $1", [
       email,
     ]);
     const user = result.rows[0];
@@ -69,7 +85,7 @@ export function createAuthRouter(db: Db): Router {
     }
 
     const token = signToken({ userId: user.id });
-    return res.json({ token });
+    return res.json({ token, username: user.username });
   });
 
   return router;

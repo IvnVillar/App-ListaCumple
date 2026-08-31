@@ -45,3 +45,14 @@ export interface ContributionRow {
   amount: string;
   created_at: string;
 }
+
+export type FriendshipStatus = "pending" | "accepted";
+
+export interface FriendshipRow {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: FriendshipStatus;
+  created_at: string;
+  responded_at: string | null;
+}

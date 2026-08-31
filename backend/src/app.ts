@@ -6,6 +6,7 @@ import { extractMetadata as defaultExtractMetadata } from "./extractMetadata";
 import { FetchError } from "./fetchHtml";
 import type { ExtractRequestBody } from "./types";
 import { createAuthRouter } from "./routes/auth";
+import { createFriendsRouter } from "./routes/friends";
 import { createOwnerListsRouter, type MetadataExtractor } from "./routes/ownerLists";
 import { createVisitorListsRouter } from "./routes/visitorLists";
 
@@ -35,6 +36,7 @@ export function createApp(db: Db, extractMetadata: MetadataExtractor = defaultEx
   });
 
   app.use("/api/auth", createAuthRouter(db));
+  app.use("/api/friends", createFriendsRouter(db));
   app.use("/api/lists", createOwnerListsRouter(db, extractMetadata));
   app.use("/api/l", createVisitorListsRouter(db));
 

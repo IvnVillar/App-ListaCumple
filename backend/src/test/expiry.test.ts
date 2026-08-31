@@ -13,7 +13,7 @@ describe("Caducidad de listas (modo puntual)", () => {
   it("un enlace caducado deja de funcionar para el visitante", async () => {
     const register = await request(app)
       .post("/api/auth/register")
-      .send({ email: "owner@example.com", password: "supersecret" });
+      .send({ email: "owner@example.com", username: "owner", password: "supersecret" });
     const token = register.body.token;
 
     const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -29,7 +29,7 @@ describe("Caducidad de listas (modo puntual)", () => {
   it("una lista sin expires_at nunca caduca", async () => {
     const register = await request(app)
       .post("/api/auth/register")
-      .send({ email: "owner@example.com", password: "supersecret" });
+      .send({ email: "owner@example.com", username: "owner", password: "supersecret" });
     const token = register.body.token;
 
     const list = await request(app)
