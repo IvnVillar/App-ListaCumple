@@ -1,17 +1,26 @@
 import { router, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { OCCASION_LABELS } from "@/lib/occasions";
+import { useShareIntentContext } from "@/lib/shareIntent";
 import { colors, shared } from "@/lib/styles";
 
 export default function ListsScreen() {
   const { token, logout } = useAuth();
+  const { hasShareIntent } = useShareIntentContext();
   const [lists, setLists] = useState<api.ListSummary[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Alguien compartió un link (share sheet nativo, spec 2.c) mientras la app
+  // no estaba abierta: en vez de aterrizar en "Mis listas", pedimos primero
+  // a qué lista añadirlo.
+  useEffect(() => {
+    if (hasShareIntent) router.replace("/lists/share-target");
+  }, [hasShareIntent]);
 
   const load = useCallback(async () => {
     if (!token) return;

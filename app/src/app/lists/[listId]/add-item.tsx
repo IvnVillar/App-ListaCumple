@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
 import * as api from "@/lib/api";
@@ -10,7 +10,7 @@ import { colors, shared } from "@/lib/styles";
 type Mode = "url" | "manual";
 
 export default function AddItemScreen() {
-  const { listId } = useLocalSearchParams<{ listId: string }>();
+  const { listId, url: sharedUrlParam } = useLocalSearchParams<{ listId: string; url?: string }>();
   const { token } = useAuth();
 
   const [mode, setMode] = useState<Mode>("url");
@@ -31,12 +31,23 @@ export default function AddItemScreen() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  async function handleExtract() {
-    if (!sourceUrl.trim()) return;
+  // Llegada desde el share sheet nativo (spec 2.c): la URL ya viene elegida,
+  // así que se rellena y se extrae sola en vez de obligar a pegarla a mano.
+  useEffect(() => {
+    if (sharedUrlParam) {
+      setSourceUrl(sharedUrlParam);
+      handleExtract(sharedUrlParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sharedUrlParam]);
+
+  async function handleExtract(urlOverride?: string) {
+    const url = (urlOverride ?? sourceUrl).trim();
+    if (!url) return;
     setError(null);
     setExtracting(true);
     try {
-      const result = await api.extractMetadata(sourceUrl.trim());
+      const result = await api.extractMetadata(url);
       if (result.title) setTitle(result.title);
       if (result.image_url) setImageUrl(result.image_url);
       if (result.price != null) setPrice(String(result.price));
@@ -138,7 +149,7 @@ export default function AddItemScreen() {
           />
           <TouchableOpacity
             style={[shared.secondaryButton, (!sourceUrl.trim() || extracting) && shared.buttonDisabled]}
-            onPress={handleExtract}
+            onPress={() => handleExtract()}
             disabled={!sourceUrl.trim() || extracting}
           >
             {extracting ? (
