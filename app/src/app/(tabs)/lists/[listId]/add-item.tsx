@@ -42,6 +42,18 @@ export default function AddItemScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sharedUrlParam]);
 
+  // Extrae sola tras una pausa al escribir/pegar, en vez de obligar a tocar
+  // el botón. El requisito de un punto evita disparar con cada tecla de un
+  // link a medio pegar; el botón sigue ahí como reintento manual.
+  useEffect(() => {
+    if (mode !== "url" || hasExtracted || extracting) return;
+    const url = sourceUrl.trim();
+    if (!/\S+\.\S+/.test(url)) return;
+    const timer = setTimeout(() => handleExtract(), 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceUrl, mode]);
+
   async function handleExtract(urlOverride?: string) {
     const url = (urlOverride ?? sourceUrl).trim();
     if (!url) return;
