@@ -3,6 +3,7 @@ import { fetchHtml, FetchError } from "./fetchHtml";
 import { extractFromJsonLd } from "./extractors/jsonLd";
 import { extractFromOpenGraph } from "./extractors/openGraph";
 import { extractHeuristic } from "./extractors/heuristic";
+import { normalizeUrl } from "./normalizeUrl";
 import { TtlCache } from "./cache";
 import type { ExtractedMetadata } from "./types";
 
@@ -30,7 +31,8 @@ function isComplete(fields: Partial<ExtractedMetadata>): boolean {
   return Boolean(fields.title && fields.image_url && fields.price != null);
 }
 
-export async function extractMetadata(inputUrl: string): Promise<ExtractedMetadata> {
+export async function extractMetadata(rawUrl: string): Promise<ExtractedMetadata> {
+  const inputUrl = normalizeUrl(rawUrl);
   const cached = cache.get(inputUrl);
   if (cached) return cached;
 

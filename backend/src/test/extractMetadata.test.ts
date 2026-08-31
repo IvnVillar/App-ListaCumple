@@ -29,4 +29,18 @@ describe("extractMetadata - cascada no debe perder datos ya encontrados", () => 
     expect(result.price).toBe(49.99);
     expect(result.currency).toBe("EUR");
   });
+
+  it("acepta una URL pegada sin esquema (p. ej. 'www.tienda.example/...')", async () => {
+    const html = `
+      <html><head>
+        <meta property="og:title" content="Producto sin esquema" />
+      </head><body></body></html>
+    `;
+    vi.mocked(fetchHtml).mockResolvedValue({ html, finalUrl: "https://tienda.example/producto" });
+
+    const result = await extractMetadata("www.tienda.example/producto");
+
+    expect(fetchHtml).toHaveBeenCalledWith("https://www.tienda.example/producto");
+    expect(result.title).toBe("Producto sin esquema");
+  });
 });

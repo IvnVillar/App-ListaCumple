@@ -4,6 +4,7 @@ import type { Db } from "../db";
 import { requireAuth } from "../auth/middleware";
 import { extractMetadata as defaultExtractMetadata } from "../extractMetadata";
 import { FetchError } from "../fetchHtml";
+import { normalizeUrl } from "../normalizeUrl";
 import type { ExtractedMetadata } from "../types";
 import {
   addItem,
@@ -23,6 +24,10 @@ export type MetadataExtractor = (url: string) => Promise<ExtractedMetadata>;
 
 const OCCASION_TYPES = ["cumpleanos", "boda", "baby_shower", "navidad", "puntual"] as const;
 
+// Quien pega un link a mano a menudo omite el esquema ("www.tienda.com/...");
+// normalizar antes de validar evita rechazar URLs perfectamente usables.
+const urlField = z.string().trim().transform(normalizeUrl).pipe(z.string().url());
+
 const createListSchema = z.object({
   title: z.string().trim().min(1).max(200),
   occasion_type: z.enum(OCCASION_TYPES),
@@ -35,7 +40,7 @@ const createListSchema = z.object({
 const createItemSchema = z
   .object({
     title: z.string().trim().min(1).max(300).optional(),
-    image_url: z.string().url().optional().nullable(),
+    image_url: urlField.optional().nullable(),
     price: z.number().nonnegative().optional().nullable(),
     currency: z
       .string()
@@ -43,7 +48,7 @@ const createItemSchema = z
       .transform((v) => v.toUpperCase())
       .optional()
       .nullable(),
-    source_url: z.string().url().optional().nullable(),
+    source_url: urlField.optional().nullable(),
     store_name: z.string().max(120).optional().nullable(),
     notes: z.string().max(1000).optional().nullable(),
     is_group_gift: z.boolean().optional(),
@@ -55,7 +60,7 @@ const createItemSchema = z
 const updateItemSchema = z
   .object({
     title: z.string().trim().min(1).max(300).optional(),
-    image_url: z.string().url().optional().nullable(),
+    image_url: urlField.optional().nullable(),
     price: z.number().nonnegative().optional().nullable(),
     currency: z
       .string()
@@ -63,7 +68,7 @@ const updateItemSchema = z
       .transform((v) => v.toUpperCase())
       .optional()
       .nullable(),
-    source_url: z.string().url().optional().nullable(),
+    source_url: urlField.optional().nullable(),
     store_name: z.string().max(120).optional().nullable(),
     notes: z.string().max(1000).optional().nullable(),
     is_group_gift: z.boolean().optional(),

@@ -114,6 +114,22 @@ describe("Creación de artículos pegando una URL (spec sección 2.a)", () => {
     expect(res.body.title).toBe("Lo pongo yo mismo");
   });
 
+  it("acepta un source_url pegado sin esquema (p. ej. 'www.tienda.example/...')", async () => {
+    await setup(
+      stubExtractor({
+        title: "Auriculares inalámbricos",
+      })
+    );
+
+    const res = await request(app)
+      .post(`/api/lists/${listId}/items`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ source_url: "www.tienda.example/producto" });
+
+    expect(res.status).toBe(201);
+    expect(res.body.source_url).toBe("https://www.tienda.example/producto");
+  });
+
   it("permite editar un artículo ya creado con PATCH", async () => {
     await setup(stubExtractor({}));
     const created = await request(app)
