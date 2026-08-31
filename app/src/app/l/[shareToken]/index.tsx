@@ -1,22 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
 import { ProgressBar } from "@/components/progress-bar";
 import { StatusBadge } from "@/components/status-badge";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import { formatEventDate } from "@/lib/date";
 import { OCCASION_EMOJI, OCCASION_LABELS } from "@/lib/occasions";
 import { colors, shared, spacing } from "@/lib/styles";
 
 function ActionForm({
   item,
+  myUsername,
   onReserve,
   onContribute,
 }: {
   item: api.VisitorItem;
+  myUsername: string | null;
   onReserve: (alias: string) => Promise<void>;
   onContribute: (alias: string, amount: number) => Promise<void>;
 }) {
@@ -27,7 +30,11 @@ function ActionForm({
 
   async function submit() {
     setError(null);
-    if (!alias.trim()) {
+    // Si has iniciado sesión, coordinarte con amigos usa tu usuario real en
+    // vez de un apodo escrito a mano (spec de coordinación tipo Tricount):
+    // así "quién lleva qué" no depende de que todos escriban el mismo nombre.
+    const effectiveAlias = myUsername ?? alias.trim();
+    if (!effectiveAlias) {
       setError("Indica tu nombre o apodo");
       return;
     }
@@ -40,9 +47,9 @@ function ActionForm({
           setBusy(false);
           return;
         }
-        await onContribute(alias.trim(), amountNumber);
+        await onContribute(effectiveAlias, amountNumber);
       } else {
-        await onReserve(alias.trim());
+        await onReserve(effectiveAlias);
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo completar la acción");
@@ -53,7 +60,9 @@ function ActionForm({
 
   return (
     <View style={{ marginTop: spacing.md, gap: spacing.sm, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
-      <FormInput icon="person-outline" value={alias} onChangeText={setAlias} placeholder="Tu nombre o apodo" />
+      {!myUsername && (
+        <FormInput icon="person-outline" value={alias} onChangeText={setAlias} placeholder="Tu nombre o apodo" />
+      )}
       {item.is_group_gift && (
         <FormInput
           icon="cash-outline"
@@ -75,10 +84,13 @@ function ActionForm({
 
 export default function VisitorListScreen() {
   const { shareToken } = useLocalSearchParams<{ shareToken: string }>();
+  const { token, username } = useAuth();
   const [list, setList] = useState<api.VisitorList | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
+  const [savedItemIds, setSavedItemIds] = useState<Set<string>>(new Set());
+  const [savingItemId, setSavingItemId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,6 +111,22 @@ export default function VisitorListScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Re-guardar (spec tipo Pinterest): copia el artículo a "Mis guardados" sin
+  // salir de la lista del amigo — requiere sesión, por eso solo se ofrece si
+  // hay token.
+  async function handleSave(itemId: string) {
+    if (!token) return;
+    setSavingItemId(itemId);
+    try {
+      await api.saveItemToDefaultList(token, shareToken, itemId);
+      setSavedItemIds((prev) => new Set(prev).add(itemId));
+    } catch (err) {
+      Alert.alert("No se pudo guardar", err instanceof ApiError ? err.message : "Inténtalo de nuevo.");
+    } finally {
+      setSavingItemId(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -142,6 +170,7 @@ export default function VisitorListScreen() {
         }
         renderItem={({ item }) => {
           const isTaken = !item.is_group_gift && item.status === "reserved";
+          const isSaved = savedItemIds.has(item.id);
           return (
             <View style={[shared.card, isTaken && { opacity: 0.6 }]}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
@@ -180,6 +209,24 @@ export default function VisitorListScreen() {
                   )}
                   {item.is_group_gift && <StatusBadge label="Bote común" tone="accent" icon="people-outline" />}
                 </View>
+                {token && (
+                  <TouchableOpacity
+                    onPress={() => handleSave(item.id)}
+                    disabled={isSaved || savingItemId === item.id}
+                    hitSlop={10}
+                    style={{ padding: 4 }}
+                  >
+                    {savingItemId === item.id ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Ionicons
+                        name={isSaved ? "bookmark" : "bookmark-outline"}
+                        size={20}
+                        color={isSaved ? colors.primary : colors.textFaint}
+                      />
+                    )}
+                  </TouchableOpacity>
+                )}
                 {(item.is_group_gift || item.status === "available") && (
                   <TouchableOpacity
                     onPress={() => setActiveItemId(activeItemId === item.id ? null : item.id)}
@@ -213,6 +260,7 @@ export default function VisitorListScreen() {
               {activeItemId === item.id && (
                 <ActionForm
                   item={item}
+                  myUsername={username}
                   onReserve={async (alias) => {
                     await api.reserveItem(shareToken, item.id, alias);
                     setActiveItemId(null);

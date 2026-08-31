@@ -17,9 +17,11 @@ import {
   listListsForOwner,
   resolveItemFields,
   sanitizeExtractedMetadata,
+  saveItemFromShareToDefaultList,
   updateItem,
   type UpdateItemInput,
 } from "../services/ownerLists";
+import { ExpiredError, NotFoundError } from "../services/visitorLists";
 
 export type MetadataExtractor = (url: string) => Promise<ExtractedMetadata>;
 
@@ -34,6 +36,11 @@ const createListSchema = z.object({
   occasion_type: z.enum(OCCASION_TYPES),
   event_date: z.string().date().optional().nullable(),
   expires_at: z.string().datetime().optional().nullable(),
+});
+
+const saveFromShareSchema = z.object({
+  share_token: z.string().uuid(),
+  item_id: z.string().uuid(),
 });
 
 // title es opcional a nivel de esquema porque puede rellenarse desde source_url
@@ -109,6 +116,29 @@ export function createOwnerListsRouter(db: Db, extractMetadata: MetadataExtracto
   router.get("/default", async (req, res) => {
     const list = await getOrCreateDefaultList(db, req.userId!);
     return res.json(list);
+  });
+
+  // "Re-guardar" (spec tipo Pinterest): copia un artículo de una lista ajena
+  // (identificada por su share_token, viéndola como amigo o con el enlace)
+  // a "Mis guardados". Antes de "/:listId" por el mismo motivo que "/default".
+  router.post("/default/save", async (req, res) => {
+    const parsed = saveFromShareSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    try {
+      const item = await saveItemFromShareToDefaultList(
+        db,
+        req.userId!,
+        parsed.data.share_token,
+        parsed.data.item_id
+      );
+      return res.status(201).json(item);
+    } catch (err) {
+      if (err instanceof NotFoundError) return res.status(404).json({ error: err.message });
+      if (err instanceof ExpiredError) return res.status(410).json({ error: err.message });
+      throw err;
+    }
   });
 
   router.get("/:listId", async (req, res) => {

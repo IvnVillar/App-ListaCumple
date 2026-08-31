@@ -202,6 +202,17 @@ export function contributeToItem(shareToken: string, itemId: string, alias: stri
   });
 }
 
+// "Re-guardar" (spec tipo Pinterest): copia un artículo visto en una lista
+// ajena a "Mis guardados", requiere sesión (por eso vive en /api/lists, no
+// junto a reserveItem/contributeToItem que son de visitante sin login).
+export function saveItemToDefaultList(token: string, shareToken: string, itemId: string) {
+  return request<OwnerItem>("/api/lists/default/save", {
+    method: "POST",
+    token,
+    body: JSON.stringify({ share_token: shareToken, item_id: itemId }),
+  });
+}
+
 export interface Friend {
   friendship_id: string;
   user_id: string;

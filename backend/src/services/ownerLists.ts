@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Db } from "../db";
-import type { ListRow, OwnerItemRow, OccasionType } from "../domain/types";
+import type { ListRow, OwnerItemRow, OccasionType, ItemRow } from "../domain/types";
 import { normalizeListRow } from "../domain/normalizeListRow";
 import { isUniqueViolation } from "../db/pgErrors";
+import { ExpiredError, NotFoundError } from "./visitorLists";
 import type { ExtractedMetadata } from "../types";
 
 export interface CreateListInput {
@@ -127,6 +128,46 @@ export async function getOrCreateDefaultList(db: Db, ownerId: string): Promise<L
     if (!retry.rows[0]) throw err;
     return normalizeListRow(retry.rows[0]);
   }
+}
+
+/**
+ * "Re-guardar" (spec tipo Pinterest): copia un artículo visto en una lista
+ * ajena (identificada por su share_token, el mismo modelo de capacidad que
+ * usa un visitante) a "Mis guardados". El share_token ya es la comprobación
+ * de acceso — igual que un visitante puede reservar con solo el enlace, aquí
+ * puede guardarse una copia sin comprobación de amistad aparte.
+ */
+export async function saveItemFromShareToDefaultList(
+  db: Db,
+  ownerId: string,
+  shareToken: string,
+  itemId: string
+): Promise<OwnerItemRow> {
+  const listResult = await db.query<ListRow>("SELECT * FROM lists WHERE share_token = $1", [shareToken]);
+  const sourceList = listResult.rows[0];
+  if (!sourceList) throw new NotFoundError("Lista no encontrada");
+  if (sourceList.expires_at && new Date(sourceList.expires_at).getTime() < Date.now()) {
+    throw new ExpiredError("Este enlace ha caducado");
+  }
+
+  const itemResult = await db.query<ItemRow>("SELECT * FROM items WHERE id = $1 AND list_id = $2", [
+    itemId,
+    sourceList.id,
+  ]);
+  const sourceItem = itemResult.rows[0];
+  if (!sourceItem) throw new NotFoundError("Artículo no encontrado");
+
+  const defaultList = await getOrCreateDefaultList(db, ownerId);
+  return addItem(db, defaultList.id, {
+    title: sourceItem.title,
+    imageUrl: sourceItem.image_url,
+    price: sourceItem.price != null ? Number(sourceItem.price) : null,
+    currency: sourceItem.currency,
+    sourceUrl: sourceItem.source_url,
+    storeName: sourceItem.store_name,
+    notes: sourceItem.notes,
+    isGroupGift: false,
+  });
 }
 
 export async function listListsForOwner(db: Db, ownerId: string): Promise<ListRow[]> {
