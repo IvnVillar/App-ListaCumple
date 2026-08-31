@@ -34,6 +34,16 @@ describe("Autenticación", () => {
     expect(second.status).toBe(409);
   });
 
+  it("dos registros simultáneos con el mismo email no provocan un 500 (condición de carrera)", async () => {
+    const [first, second] = await Promise.all([
+      request(app).post("/api/auth/register").send({ email: "carrera@example.com", password: "supersecret" }),
+      request(app).post("/api/auth/register").send({ email: "carrera@example.com", password: "otrapass123" }),
+    ]);
+
+    const statuses = [first.status, second.status].sort();
+    expect(statuses).toEqual([201, 409]);
+  });
+
   it("rechaza login con contraseña incorrecta", async () => {
     await request(app).post("/api/auth/register").send({ email: "ana@example.com", password: "supersecret" });
     const login = await request(app)

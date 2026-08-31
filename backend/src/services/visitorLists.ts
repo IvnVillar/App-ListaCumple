@@ -2,17 +2,12 @@ import { randomUUID } from "node:crypto";
 import type { Db } from "../db";
 import type { ItemRow, ListRow } from "../domain/types";
 import { normalizeListRow } from "../domain/normalizeListRow";
+import { isUniqueViolation } from "../db/pgErrors";
 
 export class ConflictError extends Error {}
 export class NotFoundError extends Error {}
 export class ExpiredError extends Error {}
 export class InvalidOperationError extends Error {}
-
-const UNIQUE_VIOLATION = "23505";
-
-function isUniqueViolation(err: unknown): boolean {
-  return (err as { code?: string } | null)?.code === UNIQUE_VIOLATION;
-}
 
 interface VisitorItemRow extends ItemRow {
   reserver_alias: string | null;

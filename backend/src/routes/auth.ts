@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { Db } from "../db";
 import { hashPassword, verifyPassword } from "../auth/password";
 import { signToken } from "../auth/jwt";
+import { isUniqueViolation } from "../db/pgErrors";
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -32,11 +33,21 @@ export function createAuthRouter(db: Db): Router {
 
     const id = randomUUID();
     const passwordHash = await hashPassword(password);
-    await db.query("INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)", [
-      id,
-      email,
-      passwordHash,
-    ]);
+    try {
+      await db.query("INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)", [
+        id,
+        email,
+        passwordHash,
+      ]);
+    } catch (err) {
+      // La comprobación SELECT de arriba no es atómica: dos registros con el
+      // mismo email a la vez pueden pasarla ambos y chocar aquí contra el
+      // UNIQUE de la columna — sin este catch, el segundo devolvía un 500.
+      if (isUniqueViolation(err)) {
+        return res.status(409).json({ error: "Ya existe una cuenta con ese email" });
+      }
+      throw err;
+    }
 
     const token = signToken({ userId: id });
     return res.status(201).json({ token });
