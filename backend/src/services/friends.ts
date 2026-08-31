@@ -155,6 +155,15 @@ export async function removeFriendship(db: Db, userId: string, friendshipId: str
   if (result.rows.length === 0) throw new NotFoundError("Amistad no encontrada");
 }
 
+export async function assertAreFriends(db: Db, userIdA: string, userIdB: string): Promise<void> {
+  const relationship = await db.query<{ status: string }>(
+    `SELECT status FROM friendships
+     WHERE status = 'accepted' AND ((requester_id = $1 AND addressee_id = $2) OR (requester_id = $2 AND addressee_id = $1))`,
+    [userIdA, userIdB]
+  );
+  if (!relationship.rows[0]) throw new ForbiddenError("No sois amigos");
+}
+
 /**
  * Ver las listas de un amigo reutiliza el mismo modelo de privacidad que un
  * visitante con enlace (spec sección 4 y 7): esta función solo devuelve las
@@ -162,12 +171,7 @@ export async function removeFriendship(db: Db, userId: string, friendshipId: str
  * se pida con el endpoint de visitante ya existente en vez de duplicar lógica.
  */
 export async function getFriendLists(db: Db, userId: string, friendUserId: string): Promise<ListRow[]> {
-  const relationship = await db.query<{ status: string }>(
-    `SELECT status FROM friendships
-     WHERE status = 'accepted' AND ((requester_id = $1 AND addressee_id = $2) OR (requester_id = $2 AND addressee_id = $1))`,
-    [userId, friendUserId]
-  );
-  if (!relationship.rows[0]) throw new ForbiddenError("No sois amigos");
+  await assertAreFriends(db, userId, friendUserId);
 
   const result = await db.query<ListRow>("SELECT * FROM lists WHERE owner_id = $1 ORDER BY created_at DESC", [
     friendUserId,

@@ -9,8 +9,14 @@ import { createAuthRouter } from "./routes/auth";
 import { createFriendsRouter } from "./routes/friends";
 import { createOwnerListsRouter, type MetadataExtractor } from "./routes/ownerLists";
 import { createVisitorListsRouter } from "./routes/visitorLists";
+import { claudeSuggester } from "./ai/claudeSuggester";
+import type { Suggester } from "./services/suggestions";
 
-export function createApp(db: Db, extractMetadata: MetadataExtractor = defaultExtractMetadata): Express {
+export function createApp(
+  db: Db,
+  extractMetadata: MetadataExtractor = defaultExtractMetadata,
+  suggester: Suggester = claudeSuggester
+): Express {
   const app = express();
   app.use(cors());
   app.use(express.json());
@@ -36,7 +42,7 @@ export function createApp(db: Db, extractMetadata: MetadataExtractor = defaultEx
   });
 
   app.use("/api/auth", createAuthRouter(db));
-  app.use("/api/friends", createFriendsRouter(db));
+  app.use("/api/friends", createFriendsRouter(db, suggester));
   app.use("/api/lists", createOwnerListsRouter(db, extractMetadata));
   app.use("/api/l", createVisitorListsRouter(db));
 

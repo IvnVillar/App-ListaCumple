@@ -16,6 +16,8 @@ import {
   removePendingRequest,
   sendFriendRequest,
 } from "../services/friends";
+import { suggestGiftsForFriend, type Suggester } from "../services/suggestions";
+import { claudeSuggester } from "../ai/claudeSuggester";
 
 const usernameBodySchema = z.object({ username: usernameSchema });
 
@@ -27,7 +29,7 @@ function handleError(err: unknown, res: Response) {
   throw err;
 }
 
-export function createFriendsRouter(db: Db): Router {
+export function createFriendsRouter(db: Db, suggester: Suggester = claudeSuggester): Router {
   const router = Router();
   router.use(requireAuth);
 
@@ -85,6 +87,18 @@ export function createFriendsRouter(db: Db): Router {
     try {
       const lists = await getFriendLists(db, req.userId!, req.params.friendUserId);
       return res.json(lists);
+    } catch (err) {
+      return handleError(err, res);
+    }
+  });
+
+  // Ideas de regalo con IA (spec de sugerencias "onsite"): se basan en lo que
+  // el AMIGO tiene guardado, así que nunca se le muestran a él mismo — solo
+  // a quien las pide sobre un amigo suyo.
+  router.get("/:friendUserId/suggestions", async (req, res) => {
+    try {
+      const suggestions = await suggestGiftsForFriend(db, suggester, req.userId!, req.params.friendUserId);
+      return res.json({ suggestions });
     } catch (err) {
       return handleError(err, res);
     }

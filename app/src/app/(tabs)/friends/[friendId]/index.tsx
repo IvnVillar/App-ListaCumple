@@ -8,6 +8,69 @@ import { useAuth } from "@/lib/auth";
 import { OCCASION_EMOJI, OCCASION_LABELS } from "@/lib/occasions";
 import { colors, shared, spacing } from "@/lib/styles";
 
+function SuggestionsSection({ friendId, username }: { friendId: string; username: string }) {
+  const { token } = useAuth();
+  const [suggestions, setSuggestions] = useState<api.GiftSuggestion[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFetch() {
+    if (!token) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.getFriendSuggestions(token, friendId);
+      setSuggestions(result.suggestions);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "No se pudieron pedir ideas ahora mismo");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <View style={[shared.card, { marginBottom: spacing.md }]}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.sm }}>
+        <Text style={{ fontSize: 18 }}>✨</Text>
+        <Text style={{ fontWeight: "700", color: colors.text, flex: 1 }}>Ideas de regalo con IA</Text>
+      </View>
+
+      {suggestions === null && !loading && (
+        <TouchableOpacity style={shared.secondaryButton} onPress={handleFetch}>
+          <Text style={shared.secondaryButtonText}>Ver ideas para @{username}</Text>
+        </TouchableOpacity>
+      )}
+
+      {loading && (
+        <View style={{ paddingVertical: spacing.md }}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      )}
+
+      {error && <Text style={shared.errorText}>{error}</Text>}
+
+      {suggestions !== null && !loading && (
+        <>
+          {suggestions.length === 0 ? (
+            <Text style={{ color: colors.textSecondary }}>
+              Sin ideas por ahora — prueba de nuevo más adelante.
+            </Text>
+          ) : (
+            <View style={{ gap: spacing.sm }}>
+              {suggestions.map((suggestion, index) => (
+                <View key={index} style={{ gap: 2 }}>
+                  <Text style={{ fontWeight: "700", color: colors.text }}>{suggestion.title}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{suggestion.reason}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
 export default function FriendListsScreen() {
   const { friendId, username } = useLocalSearchParams<{ friendId: string; username?: string }>();
   const { token } = useAuth();
@@ -59,6 +122,9 @@ export default function FriendListsScreen() {
         data={lists ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: 40 }}
+        ListHeaderComponent={
+          !loadError && username ? <SuggestionsSection friendId={friendId} username={username} /> : null
+        }
         ListEmptyComponent={
           !loadError ? (
             <View style={{ alignItems: "center", marginTop: 60 }}>

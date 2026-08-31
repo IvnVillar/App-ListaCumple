@@ -266,3 +266,15 @@ export function removeFriendship(token: string, friendshipId: string) {
 export function getFriendLists(token: string, friendUserId: string) {
   return request<ListSummary[]>(`/api/friends/${friendUserId}/lists`, { token });
 }
+
+export interface GiftSuggestion {
+  title: string;
+  reason: string;
+}
+
+// Ideas de regalo con IA (spec de sugerencias "onsite"): se basan en lo que
+// EL AMIGO tiene guardado, así que solo tiene sentido pedirlas sobre un
+// amigo, nunca sobre uno mismo.
+export function getFriendSuggestions(token: string, friendUserId: string) {
+  return request<{ suggestions: GiftSuggestion[] }>(`/api/friends/${friendUserId}/suggestions`, { token });
+}
