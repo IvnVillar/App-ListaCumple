@@ -100,7 +100,12 @@ export default function AddItemScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => setMode("manual")}
+          onPress={() => {
+            // Si ya se extrajo desde una URL y se cambia a Manual, el link
+            // no debe perderse en silencio: se traslada al campo manual.
+            if (sourceUrl.trim() && !manualLink.trim()) setManualLink(sourceUrl.trim());
+            setMode("manual");
+          }}
           style={{
             flex: 1,
             paddingVertical: 10,
