@@ -1,4 +1,6 @@
-export type OccasionType = "cumpleanos" | "boda" | "baby_shower" | "navidad" | "puntual";
+// 'guardado' es la ocasión reservada de la lista "Mis guardados" (sin fricción,
+// una por usuario) — no seleccionable a mano, ver getOrCreateDefaultList.
+export type OccasionType = "cumpleanos" | "boda" | "baby_shower" | "navidad" | "puntual" | "guardado";
 
 export interface ListRow {
   id: string;
@@ -8,6 +10,7 @@ export interface ListRow {
   event_date: string | null;
   expires_at: string | null;
   share_token: string;
+  is_default: boolean;
   created_at: string;
 }
 

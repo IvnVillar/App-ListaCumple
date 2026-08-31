@@ -10,6 +10,7 @@ const base: ListRow = {
   event_date: null,
   expires_at: null,
   share_token: "3",
+  is_default: false,
   created_at: "2026-01-01T00:00:00.000Z",
 };
 

@@ -13,6 +13,7 @@ import {
   deleteList,
   getItemsForOwner,
   getListForOwner,
+  getOrCreateDefaultList,
   listListsForOwner,
   resolveItemFields,
   sanitizeExtractedMetadata,
@@ -104,6 +105,12 @@ export function createOwnerListsRouter(db: Db, extractMetadata: MetadataExtracto
     return res.json(lists);
   });
 
+  // Antes de "/:listId": si no, "default" se leería como un listId.
+  router.get("/default", async (req, res) => {
+    const list = await getOrCreateDefaultList(db, req.userId!);
+    return res.json(list);
+  });
+
   router.get("/:listId", async (req, res) => {
     const list = await getListForOwner(db, req.userId!, req.params.listId);
     if (!list) return res.status(404).json({ error: "Lista no encontrada" });
@@ -118,6 +125,11 @@ export function createOwnerListsRouter(db: Db, extractMetadata: MetadataExtracto
   });
 
   router.delete("/:listId", async (req, res) => {
+    const list = await getListForOwner(db, req.userId!, req.params.listId);
+    if (!list) return res.status(404).json({ error: "Lista no encontrada" });
+    if (list.is_default) {
+      return res.status(400).json({ error: "No puedes eliminar tu lista de guardados" });
+    }
     const deleted = await deleteList(db, req.userId!, req.params.listId);
     if (!deleted) return res.status(404).json({ error: "Lista no encontrada" });
     return res.status(204).send();

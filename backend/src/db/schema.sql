@@ -30,6 +30,19 @@ CREATE TABLE IF NOT EXISTS lists (
 CREATE INDEX IF NOT EXISTS idx_lists_owner_id ON lists(owner_id);
 CREATE INDEX IF NOT EXISTS idx_lists_share_token ON lists(share_token);
 
+-- 'guardado' llegó después: es la ocasión reservada para "Mis guardados", la
+-- lista sin fricción donde cae cualquier link sin tener que elegir evento
+-- (no seleccionable a mano — solo la crea el backend, ver getOrCreateDefaultList).
+-- DROP+ADD en vez de un CHECK inline porque la tabla ya existía en producción.
+ALTER TABLE lists DROP CONSTRAINT IF EXISTS lists_occasion_type_check;
+ALTER TABLE lists ADD CONSTRAINT lists_occasion_type_check CHECK (occasion_type IN (
+  'cumpleanos', 'boda', 'baby_shower', 'navidad', 'puntual', 'guardado'
+));
+
+-- Como con `username`, la tabla `lists` ya existía en producción.
+ALTER TABLE lists ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT false;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lists_owner_default_unique ON lists (owner_id) WHERE is_default;
+
 CREATE TABLE IF NOT EXISTS items (
   id UUID PRIMARY KEY,
   list_id UUID NOT NULL REFERENCES lists(id) ON DELETE CASCADE,

@@ -48,7 +48,9 @@ export function login(email: string, password: string) {
   });
 }
 
-export type OccasionType = "cumpleanos" | "boda" | "baby_shower" | "navidad" | "puntual";
+// 'guardado' es la ocasión de "Mis guardados": la crea sola el backend
+// (ver getDefaultList), no es seleccionable al crear una lista a mano.
+export type OccasionType = "cumpleanos" | "boda" | "baby_shower" | "navidad" | "puntual" | "guardado";
 
 export interface ListSummary {
   id: string;
@@ -57,6 +59,7 @@ export interface ListSummary {
   event_date: string | null;
   expires_at: string | null;
   share_token: string;
+  is_default: boolean;
   created_at: string;
 }
 
@@ -90,6 +93,12 @@ export function createList(
 
 export function listLists(token: string) {
   return request<ListSummary[]>("/api/lists", { token });
+}
+
+// "Mis guardados": la crea el backend la primera vez que se pide (spec de
+// guardado libre), para que pegar un link nunca obligue a elegir ocasión.
+export function getDefaultList(token: string) {
+  return request<ListSummary>("/api/lists/default", { token });
 }
 
 export function getList(token: string, listId: string) {

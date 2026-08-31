@@ -11,23 +11,40 @@ import { colors, shared, spacing } from "@/lib/styles";
 
 export default function ListsScreen() {
   const { token } = useAuth();
-  const { hasShareIntent } = useShareIntentContext();
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntentContext();
   const [lists, setLists] = useState<api.ListSummary[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Alguien compartió un link (share sheet nativo, spec 2.c) mientras la app
-  // no estaba abierta: en vez de aterrizar en "Mis listas", pedimos primero
-  // a qué lista añadirlo.
+  // no estaba abierta: cae directo en "Mis guardados", sin preguntar antes a
+  // qué lista añadirlo (guardado sin fricción).
   useEffect(() => {
-    if (hasShareIntent) router.replace("/lists/share-target");
-  }, [hasShareIntent]);
+    if (!hasShareIntent || !token) return;
+    const sharedUrl = shareIntent.webUrl || (shareIntent.text?.startsWith("http") ? shareIntent.text : "");
+    resetShareIntent(false);
+    api
+      .getDefaultList(token)
+      .then((defaultList) => {
+        router.replace({
+          pathname: "/lists/[listId]/add-item",
+          params: { listId: defaultList.id, url: sharedUrl ?? "" },
+        });
+      })
+      .catch(() => {
+        router.replace("/home");
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasShareIntent, token]);
 
   const load = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     setLoadError(null);
     try {
+      // Asegura que "Mis guardados" ya exista antes de listar, así aparece
+      // siempre fijada arriba incluso si el usuario nunca ha guardado nada.
+      await api.getDefaultList(token);
       setLists(await api.listLists(token));
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -54,6 +71,9 @@ export default function ListsScreen() {
     );
   }
 
+  const defaultList = lists?.find((item) => item.is_default) ?? null;
+  const eventLists = lists?.filter((item) => !item.is_default) ?? [];
+
   return (
     <View style={shared.screen}>
       <Text style={shared.eyebrow}>Tus regalos</Text>
@@ -65,19 +85,53 @@ export default function ListsScreen() {
         </TouchableOpacity>
       )}
 
+      {defaultList && (
+        <TouchableOpacity
+          style={[
+            shared.card,
+            {
+              flexDirection: "row",
+              alignItems: "center",
+              gap: spacing.md,
+              backgroundColor: colors.primarySoft,
+              marginTop: spacing.md,
+            },
+          ]}
+          onPress={() => router.push(`/lists/${defaultList.id}`)}
+          activeOpacity={0.7}
+        >
+          <View
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 16,
+              backgroundColor: colors.surface,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ fontSize: 22 }}>📌</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primaryDark }}>{defaultList.title}</Text>
+            <Text style={{ color: colors.primaryDark, marginTop: 2, fontSize: 13 }}>
+              Todo lo que guardas sin elegir ocasión
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryDark} />
+        </TouchableOpacity>
+      )}
+
       <FlatList
-        data={lists ?? []}
+        data={eventLists}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingTop: spacing.lg, paddingBottom: 100 }}
         ListEmptyComponent={
           !loadError ? (
-            <View style={{ alignItems: "center", marginTop: 60 }}>
-              <Text style={{ fontSize: 48, marginBottom: spacing.md }}>🎁</Text>
-              <Text style={{ color: colors.text, fontWeight: "700", fontSize: 16, marginBottom: 4 }}>
-                Aún no tienes listas
-              </Text>
+            <View style={{ alignItems: "center", marginTop: 40 }}>
+              <Text style={{ fontSize: 40, marginBottom: spacing.md }}>🎁</Text>
               <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
-                Crea la primera y empieza a añadir cosas que te harían ilusión.
+                Aún no tienes listas para una ocasión concreta (cumpleaños, boda...).
               </Text>
             </View>
           ) : null

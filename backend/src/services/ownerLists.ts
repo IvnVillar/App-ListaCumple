@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Db } from "../db";
 import type { ListRow, OwnerItemRow, OccasionType } from "../domain/types";
 import { normalizeListRow } from "../domain/normalizeListRow";
+import { isUniqueViolation } from "../db/pgErrors";
 import type { ExtractedMetadata } from "../types";
 
 export interface CreateListInput {
@@ -92,6 +93,40 @@ export async function createList(db: Db, ownerId: string, input: CreateListInput
     [id, ownerId, input.title, input.occasionType, input.eventDate ?? null, input.expiresAt ?? null, shareToken]
   );
   return normalizeListRow(result.rows[0]);
+}
+
+/**
+ * "Mis guardados": la lista sin fricción donde cae cualquier link sin elegir
+ * ocasión (spec de guardado libre). Se crea sola la primera vez que hace
+ * falta en vez de en el registro, así también cubre a cuentas ya existentes
+ * sin necesitar una migración de arranque aparte.
+ */
+export async function getOrCreateDefaultList(db: Db, ownerId: string): Promise<ListRow> {
+  const existing = await db.query<ListRow>("SELECT * FROM lists WHERE owner_id = $1 AND is_default = true", [
+    ownerId,
+  ]);
+  if (existing.rows[0]) return normalizeListRow(existing.rows[0]);
+
+  const id = randomUUID();
+  const shareToken = randomUUID();
+  try {
+    const result = await db.query<ListRow>(
+      `INSERT INTO lists (id, owner_id, title, occasion_type, share_token, is_default)
+       VALUES ($1, $2, 'Mis guardados', 'guardado', $3, true) RETURNING *`,
+      [id, ownerId, shareToken]
+    );
+    return normalizeListRow(result.rows[0]);
+  } catch (err) {
+    // Dos peticiones a la vez (p. ej. dos guardados casi simultáneos) pueden
+    // pasar ambas el SELECT de arriba antes de que ninguna inserte — el
+    // índice único por dueño lo detecta aquí en vez de crear dos.
+    if (!isUniqueViolation(err)) throw err;
+    const retry = await db.query<ListRow>("SELECT * FROM lists WHERE owner_id = $1 AND is_default = true", [
+      ownerId,
+    ]);
+    if (!retry.rows[0]) throw err;
+    return normalizeListRow(retry.rows[0]);
+  }
 }
 
 export async function listListsForOwner(db: Db, ownerId: string): Promise<ListRow[]> {
