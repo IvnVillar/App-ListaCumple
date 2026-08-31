@@ -1,22 +1,6 @@
-import { Redirect, Stack } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
-import { useAuth } from "@/lib/auth";
+import { Stack } from "expo-router";
 
 export default function ListsLayout() {
-  const { token, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  if (!token) {
-    return <Redirect href="/login" />;
-  }
-
   return (
     <Stack screenOptions={{ headerBackTitle: "Atrás" }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />

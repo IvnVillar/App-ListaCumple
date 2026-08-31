@@ -13,5 +13,5 @@ export default function Index() {
     );
   }
 
-  return <Redirect href={token ? "/lists" : "/login"} />;
+  return <Redirect href={token ? "/home" : "/login"} />;
 }

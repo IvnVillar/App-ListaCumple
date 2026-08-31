@@ -10,7 +10,7 @@ import { useShareIntentContext } from "@/lib/shareIntent";
 import { colors, shared, spacing } from "@/lib/styles";
 
 export default function ListsScreen() {
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
   const { hasShareIntent } = useShareIntentContext();
   const [lists, setLists] = useState<api.ListSummary[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,21 +56,8 @@ export default function ListsScreen() {
 
   return (
     <View style={shared.screen}>
-      <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
-        <View>
-          <Text style={shared.eyebrow}>Hola de nuevo</Text>
-          <Text style={shared.title}>Mis listas</Text>
-        </View>
-        <TouchableOpacity
-          style={shared.iconCircle}
-          onPress={async () => {
-            await logout();
-            router.replace("/login");
-          }}
-        >
-          <Ionicons name="log-out-outline" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
+      <Text style={shared.eyebrow}>Tus regalos</Text>
+      <Text style={shared.title}>Mis listas</Text>
 
       {loadError && (
         <TouchableOpacity onPress={load}>

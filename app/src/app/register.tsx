@@ -18,7 +18,7 @@ export default function RegisterScreen() {
     setSubmitting(true);
     try {
       await register(email.trim(), password);
-      router.replace("/lists");
+      router.replace("/home");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo crear la cuenta");
     } finally {

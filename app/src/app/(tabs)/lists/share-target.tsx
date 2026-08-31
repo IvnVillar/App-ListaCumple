@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Text, TouchableOpacity, View } from "react-native";
 import * as api from "@/lib/api";
@@ -11,12 +11,16 @@ import { colors, shared, spacing } from "@/lib/styles";
 
 export default function ShareTargetScreen() {
   const { token } = useAuth();
+  const { url: manualUrl } = useLocalSearchParams<{ url?: string }>();
   const { shareIntent, resetShareIntent } = useShareIntentContext();
   const [lists, setLists] = useState<api.ListSummary[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const sharedUrl = shareIntent.webUrl ?? (shareIntent.text?.startsWith("http") ? shareIntent.text : null);
+  // Llega aquí tanto desde el share sheet nativo (shareIntent) como desde el
+  // cuadro de "pegar enlace" de Inicio (parámetro url) — el manual gana si
+  // ambos están presentes, aunque en la práctica solo uno lo estará cada vez.
+  const sharedUrl = manualUrl || shareIntent.webUrl || (shareIntent.text?.startsWith("http") ? shareIntent.text : null);
 
   useEffect(() => {
     if (!token) return;
@@ -33,6 +37,12 @@ export default function ShareTargetScreen() {
       pathname: "/lists/[listId]/add-item",
       params: { listId, url: sharedUrl ?? "" },
     });
+  }
+
+  function handleCancel() {
+    resetShareIntent(false);
+    if (router.canGoBack()) router.back();
+    else router.replace("/home");
   }
 
   if (loading) {
@@ -60,7 +70,7 @@ export default function ShareTargetScreen() {
           </Text>
         </View>
       ) : (
-        <Text style={shared.errorText}>No se ha reconocido ningún enlace en lo compartido.</Text>
+        <Text style={shared.errorText}>No se ha reconocido ningún enlace.</Text>
       )}
 
       {error && <Text style={shared.errorText}>{error}</Text>}
@@ -103,13 +113,7 @@ export default function ShareTargetScreen() {
         )}
       />
 
-      <TouchableOpacity
-        style={shared.secondaryButton}
-        onPress={() => {
-          resetShareIntent(false);
-          router.replace("/lists");
-        }}
-      >
+      <TouchableOpacity style={shared.secondaryButton} onPress={handleCancel}>
         <Text style={shared.secondaryButtonText}>Cancelar</Text>
       </TouchableOpacity>
     </View>
