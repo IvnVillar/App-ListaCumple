@@ -23,25 +23,32 @@ function findLikelyImage($: CheerioAPI): string | null {
 }
 
 function findLikelyPrice($: CheerioAPI): string | null {
-  let found: string | null = null;
+  // Un precio cerca de una palabra clave ("precio", "PVP"...) es mucho más
+  // fiable que el primer texto con forma de precio en el documento — una
+  // portada puede tener "envío gratis a partir de 60€" antes que el precio
+  // real. Por eso se recorre toda la página en vez de parar en el primer
+  // candidato: solo se corta antes si ya hay uno con palabra clave cerca.
+  let firstMatch: string | null = null;
+  let keywordMatch: string | null = null;
 
   $("body")
     .find("*")
     .each((_, el) => {
-      if (found) return;
+      if (keywordMatch) return;
       const text = $(el).clone().children().remove().end().text().trim();
       if (!text || text.length > 80) return;
-      if (!PRICE_REGEX.test(text)) return;
+      const match = text.match(PRICE_REGEX);
+      if (!match) return;
+
+      if (firstMatch == null) firstMatch = match[1];
 
       const context = `${$(el).attr("class") ?? ""} ${$(el).attr("id") ?? ""} ${text}`;
-      const nearKeyword = PRICE_KEYWORDS.test(context);
-      const match = text.match(PRICE_REGEX);
-      if (match && (nearKeyword || !found)) {
-        found = match[1];
+      if (PRICE_KEYWORDS.test(context)) {
+        keywordMatch = match[1];
       }
     });
 
-  return found;
+  return keywordMatch ?? firstMatch;
 }
 
 export function extractHeuristic($: CheerioAPI): Partial<ExtractedMetadata> {

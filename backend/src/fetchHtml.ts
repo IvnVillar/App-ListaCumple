@@ -33,6 +33,25 @@ export class FetchError extends Error {
   }
 }
 
+// El código HTTP en crudo no le dice nada a quien está pegando un link — un
+// mensaje que sugiera qué hacer a continuación es mucho más amable que "la
+// tienda respondió con estado 403".
+export function friendlyStatusMessage(statusCode: number): string {
+  if (statusCode === 403 || statusCode === 401) {
+    return "Esta tienda bloquea la extracción automática. Completa los datos a mano.";
+  }
+  if (statusCode === 404) {
+    return "La tienda dice que esa página no existe. Revisa el enlace.";
+  }
+  if (statusCode === 429) {
+    return "La tienda está limitando las peticiones automáticas. Inténtalo de nuevo en un momento.";
+  }
+  if (statusCode >= 500) {
+    return "La tienda ha tenido un problema temporal. Inténtalo de nuevo en unos minutos.";
+  }
+  return `La tienda respondió con estado ${statusCode}`;
+}
+
 export async function fetchHtml(url: string): Promise<{ html: string; finalUrl: string }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -61,7 +80,8 @@ export async function fetchHtml(url: string): Promise<{ html: string; finalUrl: 
       // undici entrega esa última respuesta de redirección tal cual en vez
       // de seguir — sin este chequeo se parsearía la página-puente como si
       // fuera el producto.
-      throw new FetchError(`La tienda respondió con estado ${response.statusCode}`);
+      //
+      throw new FetchError(friendlyStatusMessage(response.statusCode));
     }
 
     const history = (response.context as { history?: unknown[] })?.history;

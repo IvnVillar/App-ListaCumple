@@ -20,3 +20,29 @@ describe("extractHeuristic - regex de precio", () => {
     expect(result.price).toBe(expected);
   });
 });
+
+describe("extractHeuristic - prioriza el precio cerca de una palabra clave", () => {
+  it("ignora un importe suelto anterior (p. ej. 'envío gratis a partir de 60€') si luego hay un precio real", () => {
+    const html = `
+      <html><head><title>Producto de prueba</title></head><body>
+        <div class="banner">Envío gratis a partir de 60€</div>
+        <div class="precio-producto">29,99€</div>
+      </body></html>
+    `;
+    const $ = cheerio.load(html);
+    const result = extractHeuristic($);
+    expect(result.price).toBe(29.99);
+  });
+
+  it("si ningún precio tiene palabra clave cerca, usa el primero encontrado", () => {
+    const html = `
+      <html><head><title>Producto de prueba</title></head><body>
+        <div class="banner">Envío gratis a partir de 60€</div>
+        <div class="otro">También disponible por 45€</div>
+      </body></html>
+    `;
+    const $ = cheerio.load(html);
+    const result = extractHeuristic($);
+    expect(result.price).toBe(60);
+  });
+});

@@ -58,11 +58,11 @@ export default function AddItemScreen() {
       setHasExtracted(true);
     } catch (err) {
       setExtractionWarnings([]);
-      setError(
-        err instanceof ApiError
-          ? `${err.message} Puedes completar los datos manualmente.`
-          : "No se pudo extraer la información. Completa los datos manualmente."
-      );
+      if (err instanceof ApiError) {
+        setError(/manual/i.test(err.message) ? err.message : `${err.message} Puedes completar los datos manualmente.`);
+      } else {
+        setError("No se pudo extraer la información. Completa los datos manualmente.");
+      }
       setHasExtracted(true);
     } finally {
       setExtracting(false);
