@@ -80,7 +80,10 @@ export default function AddItemScreen() {
     }
   }
 
-  const canSubmit = mode === "manual" ? title.trim().length > 0 : hasExtracted || title.trim().length > 0;
+  // En modo URL, editar el link tras extraer resetea hasExtracted (oculta
+  // los campos) pero no borra title/price/etc. — exigir hasExtracted aquí
+  // evita enviar con esos valores obsoletos e invisibles bajo un link distinto.
+  const canSubmit = mode === "manual" ? title.trim().length > 0 : hasExtracted && title.trim().length > 0;
 
   return (
     <ScrollView style={shared.screen}>
