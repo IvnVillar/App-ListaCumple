@@ -48,6 +48,16 @@ export function login(email: string, password: string) {
   });
 }
 
+// Para las cuentas ya existentes cuando se añadió el username (spec de
+// amigos), que se quedaron con uno autogenerado ilegible.
+export function updateUsername(token: string, username: string) {
+  return request<{ username: string }>("/api/auth/username", {
+    method: "PATCH",
+    token,
+    body: JSON.stringify({ username }),
+  });
+}
+
 // 'guardado' es la ocasión de "Mis guardados": la crea sola el backend
 // (ver getDefaultList), no es seleccionable al crear una lista a mano.
 export type OccasionType = "cumpleanos" | "boda" | "baby_shower" | "navidad" | "puntual" | "guardado";

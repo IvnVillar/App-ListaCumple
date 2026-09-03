@@ -88,4 +88,41 @@ describe("Autenticación", () => {
     const response = await request(app).get("/api/lists");
     expect(response.status).toBe(401);
   });
+
+  it("permite cambiar el nombre de usuario (p. ej. el autogenerado de una cuenta previa a esta función)", async () => {
+    const register = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "ana@example.com", username: "ana", password: "supersecret" });
+    const token = register.body.token;
+
+    const change = await request(app)
+      .patch("/api/auth/username")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ username: "ana_real" });
+    expect(change.status).toBe(200);
+    expect(change.body.username).toBe("ana_real");
+
+    const login = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "ana@example.com", password: "supersecret" });
+    expect(login.body.username).toBe("ana_real");
+  });
+
+  it("no deja cambiar el usuario a uno ya en uso, ni sin sesión", async () => {
+    await request(app)
+      .post("/api/auth/register")
+      .send({ email: "ana@example.com", username: "ana", password: "supersecret" });
+    const bea = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "bea@example.com", username: "bea", password: "supersecret" });
+
+    const conflict = await request(app)
+      .patch("/api/auth/username")
+      .set("Authorization", `Bearer ${bea.body.token}`)
+      .send({ username: "ana" });
+    expect(conflict.status).toBe(409);
+
+    const noAuth = await request(app).patch("/api/auth/username").send({ username: "algo" });
+    expect(noAuth.status).toBe(401);
+  });
 });

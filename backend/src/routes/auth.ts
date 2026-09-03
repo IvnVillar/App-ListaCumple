@@ -4,8 +4,10 @@ import { z } from "zod";
 import type { Db } from "../db";
 import { hashPassword, verifyPassword } from "../auth/password";
 import { signToken } from "../auth/jwt";
+import { requireAuth } from "../auth/middleware";
 import { usernameSchema } from "../domain/username";
 import { isUniqueViolation } from "../db/pgErrors";
+import { writeActionLimiter } from "../rateLimit";
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -92,6 +94,28 @@ export function createAuthRouter(db: Db): Router {
 
     const token = signToken({ userId: user.id });
     return res.json({ token, username: user.username });
+  });
+
+  // Las cuentas ya existentes cuando se añadió el username (spec de
+  // amigos) se quedaron con uno autogenerado ilegible (p. ej.
+  // "user_dddd7064") — sin esto no había forma de ponerse uno presentable.
+  router.patch("/username", requireAuth, writeActionLimiter, async (req, res) => {
+    const parsed = z.object({ username: usernameSchema }).safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    try {
+      const result = await db.query<{ username: string }>(
+        "UPDATE users SET username = $1 WHERE id = $2 RETURNING username",
+        [parsed.data.username, req.userId!]
+      );
+      return res.json({ username: result.rows[0].username });
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        return res.status(409).json({ error: "Ese nombre de usuario ya está en uso" });
+      }
+      throw err;
+    }
   });
 
   return router;
