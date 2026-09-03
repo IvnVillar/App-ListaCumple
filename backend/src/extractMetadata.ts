@@ -31,11 +31,7 @@ function isComplete(fields: Partial<ExtractedMetadata>): boolean {
   return Boolean(fields.title && fields.image_url && fields.price != null);
 }
 
-export async function extractMetadata(rawUrl: string): Promise<ExtractedMetadata> {
-  const inputUrl = normalizeUrl(rawUrl);
-  const cached = cache.get(inputUrl);
-  if (cached) return cached;
-
+function assertValidHttpUrl(inputUrl: string): void {
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(inputUrl);
@@ -45,8 +41,13 @@ export async function extractMetadata(rawUrl: string): Promise<ExtractedMetadata
   if (!["http:", "https:"].includes(parsedUrl.protocol)) {
     throw new FetchError("Solo se admiten URLs http/https");
   }
+}
 
-  const { html, finalUrl } = await fetchHtml(inputUrl);
+// Aparte de fetchHtml para poder reutilizarla con HTML que ya trae quien
+// llama (ver extractMetadataFromHtml): el análisis (JSON-LD/Open Graph/
+// heurística) es el mismo tanto si el HTML lo trajo el propio servidor como
+// si lo trajo otra cosa.
+function parseHtml(html: string, finalUrl: string): ExtractedMetadata {
   const $ = cheerio.load(html);
 
   const warnings: string[] = [];
@@ -94,7 +95,7 @@ export async function extractMetadata(rawUrl: string): Promise<ExtractedMetadata
     warnings.push("Extracción parcial: revisa y completa los campos que falten manualmente.");
   }
 
-  const result: ExtractedMetadata = {
+  return {
     title: fields.title ?? null,
     image_url: resolveUrl(fields.image_url ?? null, finalUrl),
     price: fields.price ?? null,
@@ -104,7 +105,37 @@ export async function extractMetadata(rawUrl: string): Promise<ExtractedMetadata
     strategy_used,
     warnings,
   };
+}
 
+export async function extractMetadata(rawUrl: string): Promise<ExtractedMetadata> {
+  const inputUrl = normalizeUrl(rawUrl);
+  const cached = cache.get(inputUrl);
+  if (cached) return cached;
+
+  assertValidHttpUrl(inputUrl);
+
+  const { html, finalUrl } = await fetchHtml(inputUrl);
+  const result = parseHtml(html, finalUrl);
+
+  cache.set(inputUrl, result);
+  return result;
+}
+
+/**
+ * Algunas tiendas bloquean las peticiones que llegan desde la IP del
+ * servidor (de un proveedor cloud) pero no las de una conexión residencial
+ * normal — el propio móvil no tiene ese problema. Este camino analiza el
+ * HTML que YA trajo el cliente (tras pedirlo él mismo), sin que el backend
+ * vuelva a intentar la petición de red.
+ */
+export function extractMetadataFromHtml(rawUrl: string, html: string, finalUrl?: string): ExtractedMetadata {
+  const inputUrl = normalizeUrl(rawUrl);
+  const cached = cache.get(inputUrl);
+  if (cached) return cached;
+
+  assertValidHttpUrl(inputUrl);
+
+  const result = parseHtml(html, finalUrl ?? inputUrl);
   cache.set(inputUrl, result);
   return result;
 }

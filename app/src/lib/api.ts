@@ -163,6 +163,16 @@ export function extractMetadata(token: string, url: string) {
   });
 }
 
+// Repliegue cuando la tienda bloquea la IP del servidor (spec): el HTML ya
+// lo trajo el propio móvil (ver lib/clientFetch.ts), aquí solo se analiza.
+export function extractMetadataFromHtml(token: string, url: string, html: string, finalUrl?: string) {
+  return request<ExtractedMetadata>("/api/extract-metadata-from-html", {
+    method: "POST",
+    token,
+    body: JSON.stringify({ url, html, final_url: finalUrl }),
+  });
+}
+
 export interface VisitorItem {
   id: string;
   title: string;

@@ -6,6 +6,7 @@ import { FormInput } from "@/components/form-input";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { fetchHtmlFromDevice } from "@/lib/clientFetch";
 import { colors, shared, spacing } from "@/lib/styles";
 
 type Mode = "url" | "manual";
@@ -54,6 +55,16 @@ export default function AddItemScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceUrl, mode]);
 
+  function applyExtractionResult(result: api.ExtractedMetadata) {
+    if (result.title) setTitle(result.title);
+    if (result.image_url) setImageUrl(result.image_url);
+    if (result.price != null) setPrice(String(result.price));
+    if (result.currency) setCurrency(result.currency);
+    if (result.store_name) setStoreName(result.store_name);
+    setExtractionWarnings(result.warnings);
+    setHasExtracted(true);
+  }
+
   async function handleExtract(urlOverride?: string) {
     const url = (urlOverride ?? sourceUrl).trim();
     if (!url || !token) return;
@@ -61,14 +72,21 @@ export default function AddItemScreen() {
     setExtracting(true);
     try {
       const result = await api.extractMetadata(token, url);
-      if (result.title) setTitle(result.title);
-      if (result.image_url) setImageUrl(result.image_url);
-      if (result.price != null) setPrice(String(result.price));
-      if (result.currency) setCurrency(result.currency);
-      if (result.store_name) setStoreName(result.store_name);
-      setExtractionWarnings(result.warnings);
-      setHasExtracted(true);
+      applyExtractionResult(result);
     } catch (err) {
+      // 422 = la tienda bloqueó al servidor (p. ej. por ser una IP de
+      // datacenter) — el propio móvil no tiene ese problema, así que se
+      // reintenta descargando la página desde aquí antes de rendirse.
+      if (err instanceof ApiError && err.status === 422) {
+        try {
+          const { html, finalUrl } = await fetchHtmlFromDevice(url);
+          const result = await api.extractMetadataFromHtml(token, url, html, finalUrl);
+          applyExtractionResult(result);
+          return;
+        } catch {
+          // Sigue abajo con el mensaje de error genérico.
+        }
+      }
       setExtractionWarnings([]);
       if (err instanceof ApiError) {
         setError(/manual/i.test(err.message) ? err.message : `${err.message} Puedes completar los datos manualmente.`);

@@ -2,9 +2,10 @@ import "express-async-errors";
 import cors from "cors";
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
+import { z } from "zod";
 import type { Db } from "./db";
 import { requireAuth } from "./auth/middleware";
-import { extractMetadata as defaultExtractMetadata } from "./extractMetadata";
+import { extractMetadata as defaultExtractMetadata, extractMetadataFromHtml } from "./extractMetadata";
 import { FetchError } from "./fetchHtml";
 import { authLimiter, extractLimiter, generalLimiter } from "./rateLimit";
 import type { ExtractRequestBody } from "./types";
@@ -14,6 +15,12 @@ import { createOwnerListsRouter, type MetadataExtractor } from "./routes/ownerLi
 import { createVisitorListsRouter } from "./routes/visitorLists";
 import { claudeSuggester } from "./ai/claudeSuggester";
 import type { Suggester } from "./services/suggestions";
+
+const extractFromHtmlSchema = z.object({
+  url: z.string().min(1),
+  html: z.string().min(1),
+  final_url: z.string().min(1).optional(),
+});
 
 export function createApp(
   db: Db,
@@ -34,7 +41,9 @@ export function createApp(
     })
   );
   app.use(cors());
-  app.use(express.json());
+  // 5mb en vez de los 100kb por defecto: /api/extract-metadata-from-html
+  // recibe el HTML completo de una página que el propio cliente ya descargó.
+  app.use(express.json({ limit: "5mb" }));
   app.use(generalLimiter);
 
   // Requiere sesión: sin esto, cualquiera (sin cuenta) podía hacer que el
@@ -56,6 +65,27 @@ export function createApp(
       }
       console.error("Error inesperado extrayendo metadatos:", err);
       return res.status(500).json({ error: "Error interno al extraer metadatos" });
+    }
+  });
+
+  // Algunas tiendas bloquean la IP del propio servidor (proveedor cloud)
+  // pero no la de una conexión residencial normal — el móvil no tiene ese
+  // problema. Aquí el cliente ya trajo el HTML él mismo; el backend solo lo
+  // analiza, sin volver a intentar la petición de red (por eso no hace
+  // falta el guard SSRF de fetchHtml: no hay ninguna petición de red aquí).
+  app.post("/api/extract-metadata-from-html", requireAuth, extractLimiter, (req, res) => {
+    const parsed = extractFromHtmlSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    try {
+      const metadata = extractMetadataFromHtml(parsed.data.url, parsed.data.html, parsed.data.final_url);
+      return res.json(metadata);
+    } catch (err) {
+      if (err instanceof FetchError) {
+        return res.status(422).json({ error: err.message });
+      }
+      throw err;
     }
   });
 
