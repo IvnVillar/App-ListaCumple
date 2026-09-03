@@ -56,11 +56,11 @@ export default function AddItemScreen() {
 
   async function handleExtract(urlOverride?: string) {
     const url = (urlOverride ?? sourceUrl).trim();
-    if (!url) return;
+    if (!url || !token) return;
     setError(null);
     setExtracting(true);
     try {
-      const result = await api.extractMetadata(url);
+      const result = await api.extractMetadata(token, url);
       if (result.title) setTitle(result.title);
       if (result.image_url) setImageUrl(result.image_url);
       if (result.price != null) setPrice(String(result.price));

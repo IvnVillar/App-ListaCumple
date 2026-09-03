@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import type { Db } from "../db";
+import { writeActionLimiter } from "../rateLimit";
 import {
   ConflictError,
   ExpiredError,
@@ -44,7 +45,7 @@ export function createVisitorListsRouter(db: Db): Router {
     }
   });
 
-  router.post("/:shareToken/items/:itemId/reserve", async (req, res) => {
+  router.post("/:shareToken/items/:itemId/reserve", writeActionLimiter, async (req, res) => {
     const parsed = aliasSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0].message });
@@ -57,7 +58,7 @@ export function createVisitorListsRouter(db: Db): Router {
     }
   });
 
-  router.post("/:shareToken/items/:itemId/contribute", async (req, res) => {
+  router.post("/:shareToken/items/:itemId/contribute", writeActionLimiter, async (req, res) => {
     const parsed = contributeSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0].message });

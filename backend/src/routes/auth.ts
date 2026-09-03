@@ -9,7 +9,13 @@ import { isUniqueViolation } from "../db/pgErrors";
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres"),
+  // bcrypt trunca en 72 bytes: sin este máximo, alguien podría escribir una
+  // contraseña arbitrariamente larga creyendo que aporta seguridad extra
+  // más allá de ese límite (y una entrada gigante no cuesta nada rechazarla).
+  password: z
+    .string()
+    .min(8, "La contraseña debe tener al menos 8 caracteres")
+    .max(72, "La contraseña no puede tener más de 72 caracteres"),
 });
 
 const registerSchema = credentialsSchema.extend({ username: usernameSchema });

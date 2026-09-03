@@ -155,9 +155,10 @@ export interface ExtractedMetadata {
   warnings: string[];
 }
 
-export function extractMetadata(url: string) {
+export function extractMetadata(token: string, url: string) {
   return request<ExtractedMetadata>("/api/extract-metadata", {
     method: "POST",
+    token,
     body: JSON.stringify({ url }),
   });
 }

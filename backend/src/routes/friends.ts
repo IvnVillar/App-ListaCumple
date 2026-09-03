@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Db } from "../db";
 import { requireAuth } from "../auth/middleware";
 import { usernameSchema } from "../domain/username";
+import { writeActionLimiter } from "../rateLimit";
 import {
   ConflictError,
   ForbiddenError,
@@ -43,7 +44,7 @@ export function createFriendsRouter(db: Db, suggester: Suggester = claudeSuggest
     return res.json(requests);
   });
 
-  router.post("/requests", async (req, res) => {
+  router.post("/requests", writeActionLimiter, async (req, res) => {
     const parsed = usernameBodySchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0].message });
