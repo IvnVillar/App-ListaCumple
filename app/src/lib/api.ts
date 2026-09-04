@@ -299,3 +299,24 @@ export interface GiftSuggestion {
 export function getFriendSuggestions(token: string, friendUserId: string) {
   return request<{ suggestions: GiftSuggestion[] }>(`/api/friends/${friendUserId}/suggestions`, { token });
 }
+
+export interface FriendActivityItem {
+  item_id: string;
+  title: string;
+  image_url: string | null;
+  price: number | null;
+  currency: string | null;
+  store_name: string | null;
+  created_at: string;
+  list_id: string;
+  list_title: string;
+  list_share_token: string;
+  friend_user_id: string;
+  friend_username: string;
+}
+
+// Inicio de la app (spec de dashboard): lo que tus amigos han guardado
+// recientemente, en vez del "próximamente" que había antes.
+export function getFriendsActivity(token: string) {
+  return request<FriendActivityItem[]>("/api/friends/activity", { token });
+}

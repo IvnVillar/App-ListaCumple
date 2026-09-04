@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -21,6 +22,27 @@ export default function HomeScreen() {
   const [url, setUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [activity, setActivity] = useState<api.FriendActivityItem[] | null>(null);
+  const [loadingActivity, setLoadingActivity] = useState(true);
+
+  const loadActivity = useCallback(async () => {
+    if (!token) return;
+    try {
+      setActivity(await api.getFriendsActivity(token));
+    } catch {
+      // El feed de inicio es un extra, no algo crítico — si falla, se queda
+      // como estaba en vez de tapar el resto de la pantalla con un error.
+    } finally {
+      setLoadingActivity(false);
+    }
+  }, [token]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadActivity();
+    }, [loadActivity])
+  );
 
   async function handleAdd() {
     const trimmed = url.trim();
@@ -67,22 +89,72 @@ export default function HomeScreen() {
           )}
         </TouchableOpacity>
 
-        <View
-          style={{
-            marginTop: spacing.xxl,
-            alignItems: "center",
-            paddingVertical: spacing.xxl,
-            borderRadius: radius.lg,
-            borderWidth: 1.5,
-            borderColor: colors.border,
-            borderStyle: "dashed",
-          }}
-        >
-          <Ionicons name="sparkles-outline" size={24} color={colors.textFaint} />
-          <Text style={{ color: colors.textSecondary, marginTop: spacing.sm, textAlign: "center" }}>
-            Próximamente: aquí verás lo que tus amigos han añadido y reservado.
-          </Text>
-        </View>
+        <Text style={[shared.label, { marginTop: spacing.xl }]}>Lo último de tus amigos</Text>
+
+        {loadingActivity && activity === null ? (
+          <View style={{ paddingVertical: spacing.xl, alignItems: "center" }}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : activity && activity.length > 0 ? (
+          <View style={{ gap: spacing.sm }}>
+            {activity.map((entry) => (
+              <TouchableOpacity
+                key={entry.item_id}
+                style={[shared.card, { flexDirection: "row", alignItems: "center", gap: spacing.md }]}
+                onPress={() => router.push(`/l/${entry.list_share_token}`)}
+                activeOpacity={0.7}
+              >
+                {entry.image_url ? (
+                  <Image source={{ uri: entry.image_url }} style={{ width: 48, height: 48, borderRadius: 12 }} />
+                ) : (
+                  <View
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      backgroundColor: colors.card,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons name="gift-outline" size={20} color={colors.textFaint} />
+                  </View>
+                )}
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
+                    @{entry.friend_username} guardó en {entry.list_title}
+                  </Text>
+                  <Text style={{ fontWeight: "700", color: colors.text }} numberOfLines={1}>
+                    {entry.title}
+                  </Text>
+                  {entry.price != null && (
+                    <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                      {entry.price} {entry.currency ?? ""}
+                    </Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : (
+          <View
+            style={{
+              marginTop: spacing.sm,
+              alignItems: "center",
+              paddingVertical: spacing.xxl,
+              borderRadius: radius.lg,
+              borderWidth: 1.5,
+              borderColor: colors.border,
+              borderStyle: "dashed",
+            }}
+          >
+            <Ionicons name="sparkles-outline" size={24} color={colors.textFaint} />
+            <Text style={{ color: colors.textSecondary, marginTop: spacing.sm, textAlign: "center" }}>
+              Aquí verás lo que tus amigos vayan guardando.
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );

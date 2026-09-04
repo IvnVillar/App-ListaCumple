@@ -1,9 +1,8 @@
-import { Router, type Response } from "express";
+import { Router, type RequestHandler, type Response } from "express";
 import { z } from "zod";
 import type { Db } from "../db";
 import { requireAuth } from "../auth/middleware";
 import { usernameSchema } from "../domain/username";
-import { writeActionLimiter } from "../rateLimit";
 import {
   ConflictError,
   ForbiddenError,
@@ -11,6 +10,7 @@ import {
   NotFoundError,
   acceptFriendRequest,
   getFriendLists,
+  getFriendsActivity,
   listFriends,
   listPendingRequests,
   removeFriendship,
@@ -30,7 +30,11 @@ function handleError(err: unknown, res: Response) {
   throw err;
 }
 
-export function createFriendsRouter(db: Db, suggester: Suggester = claudeSuggester): Router {
+export function createFriendsRouter(
+  db: Db,
+  suggester: Suggester = claudeSuggester,
+  writeActionLimiter: RequestHandler
+): Router {
   const router = Router();
   router.use(requireAuth);
 
@@ -42,6 +46,14 @@ export function createFriendsRouter(db: Db, suggester: Suggester = claudeSuggest
   router.get("/requests", async (req, res) => {
     const requests = await listPendingRequests(db, req.userId!);
     return res.json(requests);
+  });
+
+  // Inicio de la app (spec de dashboard): lo que tus amigos han guardado
+  // recientemente. Antes de "/:friendUserId/..." por la misma razón que
+  // "requests" — si no, "activity" se leería como un friendUserId.
+  router.get("/activity", async (req, res) => {
+    const activity = await getFriendsActivity(db, req.userId!);
+    return res.json(activity);
   });
 
   router.post("/requests", writeActionLimiter, async (req, res) => {

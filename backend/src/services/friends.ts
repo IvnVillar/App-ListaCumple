@@ -178,3 +178,56 @@ export async function getFriendLists(db: Db, userId: string, friendUserId: strin
   ]);
   return result.rows.map(normalizeListRow);
 }
+
+interface FriendActivityDbRow {
+  item_id: string;
+  title: string;
+  image_url: string | null;
+  price: string | null;
+  currency: string | null;
+  store_name: string | null;
+  created_at: string;
+  list_id: string;
+  list_title: string;
+  list_share_token: string;
+  friend_user_id: string;
+  friend_username: string;
+}
+
+export interface FriendActivityRow extends Omit<FriendActivityDbRow, "price"> {
+  price: number | null;
+}
+
+/**
+ * Lo que tus amigos han guardado recientemente, para el inicio de la app
+ * (spec de dashboard tipo Pinterest). Deliberadamente NO incluye reservas
+ * ni aportaciones — mezclar eso aquí arriesga que un dueño vea sin querer
+ * quién le está reservando algo en su propia lista (spec sección 4 y 7).
+ */
+export async function getFriendsActivity(db: Db, userId: string, limit = 20): Promise<FriendActivityRow[]> {
+  const result = await db.query<FriendActivityDbRow>(
+    `SELECT
+       items.id AS item_id,
+       items.title,
+       items.image_url,
+       items.price,
+       items.currency,
+       items.store_name,
+       items.created_at,
+       lists.id AS list_id,
+       lists.title AS list_title,
+       lists.share_token AS list_share_token,
+       users.id AS friend_user_id,
+       users.username AS friend_username
+     FROM items
+     JOIN lists ON lists.id = items.list_id
+     JOIN users ON users.id = lists.owner_id
+     JOIN friendships f ON f.status = 'accepted'
+       AND ((f.requester_id = $1 AND f.addressee_id = lists.owner_id)
+         OR (f.addressee_id = $1 AND f.requester_id = lists.owner_id))
+     ORDER BY items.created_at DESC
+     LIMIT $2`,
+    [userId, limit]
+  );
+  return result.rows.map((row) => ({ ...row, price: row.price != null ? Number(row.price) : null }));
+}

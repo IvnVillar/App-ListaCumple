@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { z } from "zod";
 import type { Db } from "../db";
 import { hashPassword, verifyPassword } from "../auth/password";
@@ -7,7 +7,6 @@ import { signToken } from "../auth/jwt";
 import { requireAuth } from "../auth/middleware";
 import { usernameSchema } from "../domain/username";
 import { isUniqueViolation } from "../db/pgErrors";
-import { writeActionLimiter } from "../rateLimit";
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -28,7 +27,7 @@ interface UserRow {
   password_hash: string;
 }
 
-export function createAuthRouter(db: Db): Router {
+export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Router {
   const router = Router();
 
   router.post("/register", async (req, res) => {

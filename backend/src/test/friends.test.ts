@@ -206,4 +206,61 @@ describe("Amigos", () => {
     expect(afterAccept.body[0].title).toBe("Cumple de Bea");
     expect(afterAccept.body[0].share_token).toBeTruthy();
   });
+
+  describe("Actividad de amigos (spec de dashboard de inicio)", () => {
+    async function becomeFriends(app: Express, tokenA: string, usernameB: string, tokenB: string) {
+      const send = await request(app)
+        .post("/api/friends/requests")
+        .set("Authorization", `Bearer ${tokenA}`)
+        .send({ username: usernameB });
+      await request(app)
+        .post(`/api/friends/requests/${send.body.friendship.id}/accept`)
+        .set("Authorization", `Bearer ${tokenB}`);
+    }
+
+    it("muestra lo que ha guardado un amigo aceptado, con la información de su lista", async () => {
+      await becomeFriends(app, anaToken, "bea", beaToken);
+
+      const list = await request(app)
+        .post("/api/lists")
+        .set("Authorization", `Bearer ${beaToken}`)
+        .send({ title: "Cumple de Bea", occasion_type: "cumpleanos" });
+      await request(app)
+        .post(`/api/lists/${list.body.id}/items`)
+        .set("Authorization", `Bearer ${beaToken}`)
+        .send({ title: "Bufanda", price: 20 });
+
+      const activity = await request(app).get("/api/friends/activity").set("Authorization", `Bearer ${anaToken}`);
+      expect(activity.status).toBe(200);
+      expect(activity.body).toHaveLength(1);
+      expect(activity.body[0].title).toBe("Bufanda");
+      expect(activity.body[0].price).toBe(20);
+      expect(activity.body[0].friend_username).toBe("bea");
+      expect(activity.body[0].list_title).toBe("Cumple de Bea");
+      expect(activity.body[0].list_share_token).toBeTruthy();
+    });
+
+    it("no muestra lo guardado por alguien que no es tu amigo, ni lo que guardas tú mismo", async () => {
+      const list = await request(app)
+        .post("/api/lists")
+        .set("Authorization", `Bearer ${beaToken}`)
+        .send({ title: "Cumple de Bea", occasion_type: "cumpleanos" });
+      await request(app)
+        .post(`/api/lists/${list.body.id}/items`)
+        .set("Authorization", `Bearer ${beaToken}`)
+        .send({ title: "De una desconocida" });
+
+      const myList = await request(app)
+        .post("/api/lists")
+        .set("Authorization", `Bearer ${anaToken}`)
+        .send({ title: "Mi propia lista", occasion_type: "cumpleanos" });
+      await request(app)
+        .post(`/api/lists/${myList.body.id}/items`)
+        .set("Authorization", `Bearer ${anaToken}`)
+        .send({ title: "Lo que guardo yo" });
+
+      const activity = await request(app).get("/api/friends/activity").set("Authorization", `Bearer ${anaToken}`);
+      expect(activity.body).toEqual([]);
+    });
+  });
 });

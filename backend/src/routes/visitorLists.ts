@@ -1,7 +1,6 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import { z } from "zod";
 import type { Db } from "../db";
-import { writeActionLimiter } from "../rateLimit";
 import {
   ConflictError,
   ExpiredError,
@@ -28,7 +27,7 @@ function handleError(err: unknown, res: import("express").Response) {
   throw err;
 }
 
-export function createVisitorListsRouter(db: Db): Router {
+export function createVisitorListsRouter(db: Db, writeActionLimiter: RequestHandler): Router {
   const router = Router();
 
   router.get("/:shareToken", async (req, res) => {

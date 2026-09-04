@@ -7,7 +7,7 @@ import type { Db } from "./db";
 import { requireAuth } from "./auth/middleware";
 import { extractMetadata as defaultExtractMetadata, extractMetadataFromHtml } from "./extractMetadata";
 import { FetchError } from "./fetchHtml";
-import { authLimiter, extractLimiter, generalLimiter } from "./rateLimit";
+import { createRateLimiters } from "./rateLimit";
 import type { ExtractRequestBody } from "./types";
 import { createAuthRouter } from "./routes/auth";
 import { createFriendsRouter } from "./routes/friends";
@@ -28,6 +28,7 @@ export function createApp(
   suggester: Suggester = claudeSuggester
 ): Express {
   const app = express();
+  const rateLimiters = createRateLimiters();
   // Render está detrás de un único proxy inverso: sin esto, express-rate-limit
   // vería la IP interna del proxy para todo el mundo y compartiría el mismo
   // cupo entre todos los usuarios en vez de limitar por IP real.
@@ -44,11 +45,11 @@ export function createApp(
   // 5mb en vez de los 100kb por defecto: /api/extract-metadata-from-html
   // recibe el HTML completo de una página que el propio cliente ya descargó.
   app.use(express.json({ limit: "5mb" }));
-  app.use(generalLimiter);
+  app.use(rateLimiters.general);
 
   // Requiere sesión: sin esto, cualquiera (sin cuenta) podía hacer que el
   // servidor visitara cualquier URL a su antojo — un proxy abierto gratis.
-  app.post("/api/extract-metadata", requireAuth, extractLimiter, async (req, res) => {
+  app.post("/api/extract-metadata", requireAuth, rateLimiters.extract, async (req, res) => {
     const body = req.body as ExtractRequestBody;
     const url = body?.url;
 
@@ -73,7 +74,7 @@ export function createApp(
   // problema. Aquí el cliente ya trajo el HTML él mismo; el backend solo lo
   // analiza, sin volver a intentar la petición de red (por eso no hace
   // falta el guard SSRF de fetchHtml: no hay ninguna petición de red aquí).
-  app.post("/api/extract-metadata-from-html", requireAuth, extractLimiter, (req, res) => {
+  app.post("/api/extract-metadata-from-html", requireAuth, rateLimiters.extract, (req, res) => {
     const parsed = extractFromHtmlSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.issues[0].message });
@@ -89,10 +90,10 @@ export function createApp(
     }
   });
 
-  app.use("/api/auth", authLimiter, createAuthRouter(db));
-  app.use("/api/friends", createFriendsRouter(db, suggester));
+  app.use("/api/auth", rateLimiters.auth, createAuthRouter(db, rateLimiters.writeAction));
+  app.use("/api/friends", createFriendsRouter(db, suggester, rateLimiters.writeAction));
   app.use("/api/lists", createOwnerListsRouter(db, extractMetadata));
-  app.use("/api/l", createVisitorListsRouter(db));
+  app.use("/api/l", createVisitorListsRouter(db, rateLimiters.writeAction));
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
 
