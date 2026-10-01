@@ -35,6 +35,23 @@ function ConsentCheckbox({
   );
 }
 
+// Enlaces aparte del propio TouchableOpacity que marca la casilla: un <Text
+// onPress> anidado dentro de otro Touchable no es fiable en nativo (el padre
+// se queda con el toque y el enlace nunca llega a abrirse), así que viven
+// como sus propios botones, fuera de esa área.
+function LegalLinks() {
+  return (
+    <View style={{ flexDirection: "row", gap: spacing.lg, marginTop: spacing.md }}>
+      <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync(`${API_BASE_URL}/terms`)} hitSlop={8}>
+        <Text style={{ color: colors.primary, fontWeight: "700", fontSize: 13 }}>Ver Términos de servicio</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync(`${API_BASE_URL}/privacy`)} hitSlop={8}>
+        <Text style={{ color: colors.primary, fontWeight: "700", fontSize: 13 }}>Ver Política de privacidad</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function RegisterScreen() {
   const { register } = useAuth();
   const [email, setEmail] = useState("");
@@ -113,15 +130,10 @@ export default function RegisterScreen() {
           placeholder="Al menos 8 caracteres"
         />
 
+        <LegalLinks />
+
         <ConsentCheckbox checked={acceptedTerms} onToggle={() => setAcceptedTerms((v) => !v)}>
-          Acepto los{" "}
-          <Text style={{ color: colors.primary, fontWeight: "700" }} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE_URL}/terms`)}>
-            Términos de servicio
-          </Text>{" "}
-          y la{" "}
-          <Text style={{ color: colors.primary, fontWeight: "700" }} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE_URL}/privacy`)}>
-            Política de privacidad
-          </Text>
+          Acepto los Términos de servicio y la Política de privacidad
         </ConsentCheckbox>
 
         <ConsentCheckbox checked={confirmedAge} onToggle={() => setConfirmedAge((v) => !v)}>
