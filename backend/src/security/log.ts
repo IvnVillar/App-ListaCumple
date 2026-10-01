@@ -9,7 +9,9 @@ export type SecurityEvent =
   | "login_success"
   | "login_failed"
   | "account_locked"
-  | "account_deleted";
+  | "account_deleted"
+  | "password_reset_requested"
+  | "password_reset_completed";
 
 export function logSecurityEvent(event: SecurityEvent, details: Record<string, unknown>): void {
   console.log(

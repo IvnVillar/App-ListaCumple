@@ -17,6 +17,20 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INT NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
 
+-- Recuperación de contraseña: se guarda un HASH del token, nunca el token en
+-- claro (igual que con la contraseña), así que una fuga de la base de datos
+-- no basta por sí sola para resetear la contraseña de nadie.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_hash TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMPTZ;
+
+-- token_version viaja dentro del JWT; al cambiar la contraseña se incrementa
+-- aquí, así que cualquier token emitido ANTES del cambio deja de ser válido
+-- en el siguiente requireAuth (checklist: "reset sessions on password
+-- change"). Los tokens ya en circulación antes de añadir esta columna no
+-- llevan este campo — auth/middleware.ts los sigue aceptando por compatibilidad
+-- hasta que caduquen solos o el usuario cambie su contraseña.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT NOT NULL DEFAULT 0;
+
 -- `username` llegó después de que ya hubiera cuentas reales en producción, así
 -- que CREATE TABLE IF NOT EXISTS no lo habría añadido a una tabla existente.
 -- Se aplica con ALTER, rellenando primero cualquier fila que aún no tenga uno

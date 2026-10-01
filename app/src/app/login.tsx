@@ -63,6 +63,10 @@ export default function LoginScreen() {
         <Text style={shared.label}>Contraseña</Text>
         <FormInput icon="lock-closed-outline" value={password} onChangeText={setPassword} secureTextEntry />
 
+        <Link href="/forgot-password" style={{ alignSelf: "flex-end", marginTop: 8 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>¿Olvidaste tu contraseña?</Text>
+        </Link>
+
         {error && <Text style={shared.errorText}>{error}</Text>}
 
         <TouchableOpacity

@@ -4,10 +4,13 @@ import { z } from "zod";
 import type { Db } from "../db";
 import { hashPassword, verifyPassword } from "../auth/password";
 import { signToken } from "../auth/jwt";
-import { requireAuth } from "../auth/middleware";
+import { createRequireAuth } from "../auth/middleware";
 import { usernameSchema } from "../domain/username";
 import { isUniqueViolation } from "../db/pgErrors";
 import { logSecurityEvent } from "../security/log";
+import type { Mailer } from "../mail/mailer";
+import { resendMailer } from "../mail/resendMailer";
+import { InvalidResetTokenError, requestPasswordReset, resetPassword } from "../services/passwordReset";
 
 // Complementa el rate limit por IP (que no frena a quien reparte sus
 // intentos entre varias IPs contra UNA cuenta concreta): tras demasiados
@@ -43,10 +46,17 @@ interface UserRow {
   password_hash: string;
   failed_login_attempts: number;
   locked_until: string | null;
+  token_version: number;
 }
 
-export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Router {
+export function createAuthRouter(
+  db: Db,
+  writeActionLimiter: RequestHandler,
+  passwordResetLimiter: RequestHandler,
+  mailer: Mailer = resendMailer
+): Router {
   const router = Router();
+  const requireAuth = createRequireAuth(db);
 
   router.post("/register", async (req, res) => {
     const parsed = registerSchema.safeParse(req.body);
@@ -88,7 +98,7 @@ export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Ro
       throw err;
     }
 
-    const token = signToken({ userId: id });
+    const token = signToken({ userId: id, tokenVersion: 0 });
     logSecurityEvent("register", { userId: id });
     return res.status(201).json({ token, username });
   });
@@ -101,7 +111,7 @@ export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Ro
     const { email, password } = parsed.data;
 
     const result = await db.query<UserRow>(
-      "SELECT id, username, password_hash, failed_login_attempts, locked_until FROM users WHERE email = $1",
+      "SELECT id, username, password_hash, failed_login_attempts, locked_until, token_version FROM users WHERE email = $1",
       [email]
     );
     const user = result.rows[0];
@@ -136,7 +146,7 @@ export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Ro
       await db.query("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1", [user.id]);
     }
 
-    const token = signToken({ userId: user.id });
+    const token = signToken({ userId: user.id, tokenVersion: user.token_version });
     logSecurityEvent("login_success", { userId: user.id });
     return res.json({ token, username: user.username });
   });
@@ -172,6 +182,39 @@ export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Ro
     await db.query("DELETE FROM users WHERE id = $1", [req.userId!]);
     logSecurityEvent("account_deleted", { userId: req.userId! });
     return res.status(204).send();
+  });
+
+  const GENERIC_RESET_MESSAGE = "Si existe una cuenta con ese email, te hemos enviado un enlace para restablecer la contraseña.";
+
+  router.post("/forgot-password", passwordResetLimiter, async (req, res) => {
+    const parsed = z.object({ email: z.string().trim().toLowerCase().email() }).safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    await requestPasswordReset(db, mailer, parsed.data.email);
+    logSecurityEvent("password_reset_requested", { email: parsed.data.email });
+    // Mismo mensaje exista o no la cuenta (checklist: "prevent user
+    // enumeration") — nunca reveles aquí si el email está registrado.
+    return res.status(200).json({ message: GENERIC_RESET_MESSAGE });
+  });
+
+  router.post("/reset-password", passwordResetLimiter, async (req, res) => {
+    const parsed = z
+      .object({ token: z.string().min(1), password: credentialsSchema.shape.password })
+      .safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    try {
+      await resetPassword(db, parsed.data.token, parsed.data.password);
+    } catch (err) {
+      if (err instanceof InvalidResetTokenError) {
+        return res.status(400).json({ error: err.message });
+      }
+      throw err;
+    }
+    logSecurityEvent("password_reset_completed", {});
+    return res.status(200).json({ message: "Contraseña actualizada. Ya puedes iniciar sesión con ella." });
   });
 
   return router;

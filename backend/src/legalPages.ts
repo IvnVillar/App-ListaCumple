@@ -64,6 +64,7 @@ export const PRIVACY_POLICY_HTML = page(
   <li><strong>Neon</strong> — aloja la base de datos.</li>
   <li><strong>Render</strong> — aloja el servidor de la app.</li>
   <li><strong>Expo / EAS</strong> — distribuye las versiones instalables de la app.</li>
+  <li><strong>Resend</strong> — envía el email de recuperación de contraseña cuando lo pides, con tu email como único dato necesario para ello.</li>
   <li><strong>Anthropic</strong> — solo si activamos las sugerencias de regalo con IA (hoy inactivas).</li>
 </ul>
 <p>Alguno de estos proveedores puede procesar datos fuera de España o la Unión Europea (p. ej. en EE. UU.); según sus propias políticas de privacidad, aplican medidas de seguridad acordes al RGPD.</p>

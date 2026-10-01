@@ -1,7 +1,7 @@
 import { Router, type RequestHandler, type Response } from "express";
 import { z } from "zod";
 import type { Db } from "../db";
-import { requireAuth } from "../auth/middleware";
+import { createRequireAuth } from "../auth/middleware";
 import { usernameSchema } from "../domain/username";
 import {
   ConflictError,
@@ -37,7 +37,7 @@ export function createFriendsRouter(
   aiLimiter: RequestHandler
 ): Router {
   const router = Router();
-  router.use(requireAuth);
+  router.use(createRequireAuth(db));
 
   router.get("/", async (req, res) => {
     const friends = await listFriends(db, req.userId!);

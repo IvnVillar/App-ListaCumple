@@ -59,6 +59,20 @@ export function deleteAccount(token: string) {
   return request<void>("/api/auth/account", { method: "DELETE", token });
 }
 
+export function requestPasswordReset(email: string) {
+  return request<{ message: string }>("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resetPassword(token: string, password: string) {
+  return request<{ message: string }>("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
 export function login(email: string, password: string) {
   return request<AuthResponse>("/api/auth/login", {
     method: "POST",

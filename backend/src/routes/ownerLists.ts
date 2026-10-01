@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import type { Db } from "../db";
-import { requireAuth } from "../auth/middleware";
+import { createRequireAuth } from "../auth/middleware";
 import { extractMetadata as defaultExtractMetadata } from "../extractMetadata";
 import { FetchError } from "../fetchHtml";
 import { normalizeUrl } from "../normalizeUrl";
@@ -91,7 +91,7 @@ async function summarizeList(db: Db, listId: string) {
 
 export function createOwnerListsRouter(db: Db, extractMetadata: MetadataExtractor = defaultExtractMetadata): Router {
   const router = Router();
-  router.use(requireAuth);
+  router.use(createRequireAuth(db));
 
   router.post("/", async (req, res) => {
     const parsed = createListSchema.safeParse(req.body);

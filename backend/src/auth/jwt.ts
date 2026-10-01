@@ -11,6 +11,9 @@ if (!process.env.JWT_SECRET) {
 
 export interface TokenPayload {
   userId: string;
+  // Ausente en tokens emitidos antes de añadir esta comprobación —
+  // auth/middleware.ts trata esa ausencia como "válido" por compatibilidad.
+  tokenVersion?: number;
 }
 
 export function signToken(payload: TokenPayload): string {

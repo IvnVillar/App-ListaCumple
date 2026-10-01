@@ -4,7 +4,7 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import helmet from "helmet";
 import { z } from "zod";
 import type { Db } from "./db";
-import { requireAuth } from "./auth/middleware";
+import { createRequireAuth } from "./auth/middleware";
 import { extractMetadata as defaultExtractMetadata, extractMetadataFromHtml } from "./extractMetadata";
 import { FetchError } from "./fetchHtml";
 import { createRateLimiters } from "./rateLimit";
@@ -16,6 +16,8 @@ import { createVisitorListsRouter } from "./routes/visitorLists";
 import { claudeSuggester } from "./ai/claudeSuggester";
 import type { Suggester } from "./services/suggestions";
 import { PRIVACY_POLICY_HTML, TERMS_OF_SERVICE_HTML } from "./legalPages";
+import type { Mailer } from "./mail/mailer";
+import { resendMailer } from "./mail/resendMailer";
 
 const extractFromHtmlSchema = z.object({
   url: z.string().min(1),
@@ -37,10 +39,12 @@ const ALLOWED_ORIGINS = [
 export function createApp(
   db: Db,
   extractMetadata: MetadataExtractor = defaultExtractMetadata,
-  suggester: Suggester = claudeSuggester
+  suggester: Suggester = claudeSuggester,
+  mailer: Mailer = resendMailer
 ): Express {
   const app = express();
   const rateLimiters = createRateLimiters();
+  const requireAuth = createRequireAuth(db);
   // Render está detrás de un único proxy inverso: sin esto, express-rate-limit
   // vería la IP interna del proxy para todo el mundo y compartiría el mismo
   // cupo entre todos los usuarios en vez de limitar por IP real.
@@ -116,7 +120,11 @@ export function createApp(
     }
   });
 
-  app.use("/api/auth", rateLimiters.auth, createAuthRouter(db, rateLimiters.writeAction));
+  app.use(
+    "/api/auth",
+    rateLimiters.auth,
+    createAuthRouter(db, rateLimiters.writeAction, rateLimiters.passwordReset, mailer)
+  );
   app.use("/api/friends", createFriendsRouter(db, suggester, rateLimiters.writeAction, rateLimiters.ai));
   app.use("/api/lists", createOwnerListsRouter(db, extractMetadata));
   app.use("/api/l", createVisitorListsRouter(db, rateLimiters.writeAction));

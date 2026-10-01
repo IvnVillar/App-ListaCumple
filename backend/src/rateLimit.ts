@@ -18,6 +18,10 @@ export interface RateLimiters {
   // bajo que el resto para que nadie pueda inflar la factura a base de pedir
   // sugerencias en bucle.
   ai: RateLimitRequestHandler;
+  // Recuperación de contraseña: más estricto que el resto de /api/auth para
+  // que nadie pueda usarlo para bombardear de emails una cuenta ajena ni
+  // para probar tokens de reset por fuerza bruta.
+  passwordReset: RateLimitRequestHandler;
   // Suelo general para cualquier otra ruta no cubierta por los de arriba.
   general: RateLimitRequestHandler;
 }
@@ -35,6 +39,7 @@ export function createRateLimiters(): RateLimiters {
     extract: rateLimit({ windowMs: WINDOW_MS, limit: 30, standardHeaders: true, legacyHeaders: false }),
     writeAction: rateLimit({ windowMs: WINDOW_MS, limit: 30, standardHeaders: true, legacyHeaders: false }),
     ai: rateLimit({ windowMs: WINDOW_MS, limit: 10, standardHeaders: true, legacyHeaders: false }),
+    passwordReset: rateLimit({ windowMs: WINDOW_MS, limit: 5, standardHeaders: true, legacyHeaders: false }),
     general: rateLimit({ windowMs: WINDOW_MS, limit: 300, standardHeaders: true, legacyHeaders: false }),
   };
 }
