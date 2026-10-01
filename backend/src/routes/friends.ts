@@ -33,7 +33,8 @@ function handleError(err: unknown, res: Response) {
 export function createFriendsRouter(
   db: Db,
   suggester: Suggester = claudeSuggester,
-  writeActionLimiter: RequestHandler
+  writeActionLimiter: RequestHandler,
+  aiLimiter: RequestHandler
 ): Router {
   const router = Router();
   router.use(requireAuth);
@@ -108,7 +109,7 @@ export function createFriendsRouter(
   // Ideas de regalo con IA (spec de sugerencias "onsite"): se basan en lo que
   // el AMIGO tiene guardado, así que nunca se le muestran a él mismo — solo
   // a quien las pide sobre un amigo suyo.
-  router.get("/:friendUserId/suggestions", async (req, res) => {
+  router.get("/:friendUserId/suggestions", aiLimiter, async (req, res) => {
     try {
       const suggestions = await suggestGiftsForFriend(db, suggester, req.userId!, req.params.friendUserId);
       return res.json({ suggestions });

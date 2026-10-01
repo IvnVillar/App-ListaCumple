@@ -13,6 +13,11 @@ export interface RateLimiters {
   // Acciones de escritura que alguien podría intentar automatizar:
   // solicitudes de amistad, reservas, aportaciones, cambiar de usuario.
   writeAction: RateLimitRequestHandler;
+  // Sugerencias de regalo con IA: cada llamada factura contra la cuenta de
+  // Anthropic (cuando haya una clave configurada) — un límite mucho más
+  // bajo que el resto para que nadie pueda inflar la factura a base de pedir
+  // sugerencias en bucle.
+  ai: RateLimitRequestHandler;
   // Suelo general para cualquier otra ruta no cubierta por los de arriba.
   general: RateLimitRequestHandler;
 }
@@ -29,6 +34,7 @@ export function createRateLimiters(): RateLimiters {
     auth: rateLimit({ windowMs: WINDOW_MS, limit: 20, standardHeaders: true, legacyHeaders: false }),
     extract: rateLimit({ windowMs: WINDOW_MS, limit: 30, standardHeaders: true, legacyHeaders: false }),
     writeAction: rateLimit({ windowMs: WINDOW_MS, limit: 30, standardHeaders: true, legacyHeaders: false }),
+    ai: rateLimit({ windowMs: WINDOW_MS, limit: 10, standardHeaders: true, legacyHeaders: false }),
     general: rateLimit({ windowMs: WINDOW_MS, limit: 300, standardHeaders: true, legacyHeaders: false }),
   };
 }

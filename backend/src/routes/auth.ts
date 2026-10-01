@@ -7,6 +7,14 @@ import { signToken } from "../auth/jwt";
 import { requireAuth } from "../auth/middleware";
 import { usernameSchema } from "../domain/username";
 import { isUniqueViolation } from "../db/pgErrors";
+import { logSecurityEvent } from "../security/log";
+
+// Complementa el rate limit por IP (que no frena a quien reparte sus
+// intentos entre varias IPs contra UNA cuenta concreta): tras demasiados
+// fallos seguidos, esa cuenta se bloquea un rato aunque la contraseña
+// probada a continuación sea la correcta.
+const MAX_FAILED_ATTEMPTS = 10;
+const LOCK_DURATION_MS = 15 * 60 * 1000;
 
 const credentialsSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
@@ -33,6 +41,8 @@ interface UserRow {
   id: string;
   username: string;
   password_hash: string;
+  failed_login_attempts: number;
+  locked_until: string | null;
 }
 
 export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Router {
@@ -79,6 +89,7 @@ export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Ro
     }
 
     const token = signToken({ userId: id });
+    logSecurityEvent("register", { userId: id });
     return res.status(201).json({ token, username });
   });
 
@@ -89,15 +100,44 @@ export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Ro
     }
     const { email, password } = parsed.data;
 
-    const result = await db.query<UserRow>("SELECT id, username, password_hash FROM users WHERE email = $1", [
-      email,
-    ]);
+    const result = await db.query<UserRow>(
+      "SELECT id, username, password_hash, failed_login_attempts, locked_until FROM users WHERE email = $1",
+      [email]
+    );
     const user = result.rows[0];
+
+    if (user?.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
+      logSecurityEvent("login_failed", { userId: user.id, reason: "locked" });
+      return res.status(423).json({
+        error: "Cuenta bloqueada temporalmente por demasiados intentos fallidos. Inténtalo de nuevo en unos minutos.",
+      });
+    }
+
     if (!user || !(await verifyPassword(password, user.password_hash))) {
+      if (user) {
+        const attempts = user.failed_login_attempts + 1;
+        if (attempts >= MAX_FAILED_ATTEMPTS) {
+          await db.query(
+            "UPDATE users SET failed_login_attempts = 0, locked_until = now() + ($2 * interval '1 millisecond') WHERE id = $1",
+            [user.id, LOCK_DURATION_MS]
+          );
+          logSecurityEvent("account_locked", { userId: user.id });
+        } else {
+          await db.query("UPDATE users SET failed_login_attempts = $2 WHERE id = $1", [user.id, attempts]);
+        }
+        logSecurityEvent("login_failed", { userId: user.id, reason: "wrong_password" });
+      } else {
+        logSecurityEvent("login_failed", { reason: "unknown_email" });
+      }
       return res.status(401).json({ error: "Email o contraseña incorrectos" });
     }
 
+    if (user.failed_login_attempts > 0) {
+      await db.query("UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1", [user.id]);
+    }
+
     const token = signToken({ userId: user.id });
+    logSecurityEvent("login_success", { userId: user.id });
     return res.json({ token, username: user.username });
   });
 
@@ -130,6 +170,7 @@ export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Ro
   // están ligados a su cuenta (son solo texto libre), así que no se tocan.
   router.delete("/account", requireAuth, writeActionLimiter, async (req, res) => {
     await db.query("DELETE FROM users WHERE id = $1", [req.userId!]);
+    logSecurityEvent("account_deleted", { userId: req.userId! });
     return res.status(204).send();
   });
 

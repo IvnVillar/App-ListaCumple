@@ -169,4 +169,22 @@ describe("Autenticación", () => {
     const noAuth = await request(app).delete("/api/auth/account");
     expect(noAuth.status).toBe(401);
   });
+
+  it("bloquea la cuenta tras demasiados intentos fallidos seguidos, aunque luego se use la contraseña correcta", async () => {
+    await request(app)
+      .post("/api/auth/register")
+      .send({ email: "ana@example.com", username: "ana", password: "supersecret", accepted_terms: true, confirmed_age: true });
+
+    for (let i = 0; i < 10; i++) {
+      const attempt = await request(app)
+        .post("/api/auth/login")
+        .send({ email: "ana@example.com", password: "incorrecta" });
+      expect(attempt.status).toBe(401);
+    }
+
+    const lockedWithRightPassword = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "ana@example.com", password: "supersecret" });
+    expect(lockedWithRightPassword.status).toBe(423);
+  });
 });

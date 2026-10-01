@@ -77,4 +77,46 @@ describe("Endurecimiento de seguridad", () => {
     expect(terms.status).toBe(200);
     expect(terms.text).toContain("Términos de Servicio");
   });
+
+  it("rechaza peticiones de navegador desde un origen no permitido (CORS)", async () => {
+    const blocked = await request(app).get("/health").set("Origin", "https://sitio-cualquiera.example");
+    expect(blocked.status).toBe(403);
+
+    const allowed = await request(app).get("/health").set("Origin", "http://localhost:8081");
+    expect(allowed.status).toBe(200);
+
+    const noOrigin = await request(app).get("/health");
+    expect(noOrigin.status).toBe(200);
+  });
+
+  it("rechaza un cuerpo de petición demasiado grande en rutas normales", async () => {
+    const hugeNotes = "a".repeat(200_000);
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ email: "ana@example.com", password: hugeNotes });
+    expect(res.status).toBe(413);
+  });
+
+  it("limita las peticiones a las sugerencias de IA, mucho más estricto que el resto (control de coste)", async () => {
+    const friend = await request(app)
+      .post("/api/auth/register")
+      .send({ email: "bea@example.com", username: "bea", password: "supersecret", accepted_terms: true, confirmed_age: true });
+    const friendToken = friend.body.token;
+    const friendId = JSON.parse(Buffer.from(friendToken.split(".")[1], "base64").toString()).userId;
+
+    const sent = await request(app)
+      .post("/api/friends/requests")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ username: "bea" });
+    await request(app)
+      .post(`/api/friends/requests/${sent.body.friendship.id}/accept`)
+      .set("Authorization", `Bearer ${friendToken}`);
+
+    const attempts = await Promise.all(
+      Array.from({ length: 11 }, () =>
+        request(app).get(`/api/friends/${friendId}/suggestions`).set("Authorization", `Bearer ${token}`)
+      )
+    );
+    expect(attempts.some((res) => res.status === 429)).toBe(true);
+  });
 });

@@ -23,6 +23,17 @@ const extractFromHtmlSchema = z.object({
   final_url: z.string().min(1).optional(),
 });
 
+// La app nativa (iOS/Android/Expo Go) no manda cabecera Origin — CORS solo
+// afecta a llamadas desde un navegador. Hoy el único navegador real que nos
+// llama es la propia previsualización web de Expo en desarrollo; no hay
+// ninguna web pública todavía. ALLOWED_ORIGINS (coma-separado) permite sumar
+// un dominio real el día que publiquemos una web, sin tocar código.
+const DEFAULT_DEV_ORIGINS = ["http://localhost:8081", "http://localhost:19006"];
+const ALLOWED_ORIGINS = [
+  ...DEFAULT_DEV_ORIGINS,
+  ...(process.env.ALLOWED_ORIGINS?.split(",").map((o) => o.trim()).filter(Boolean) ?? []),
+];
+
 export function createApp(
   db: Db,
   extractMetadata: MetadataExtractor = defaultExtractMetadata,
@@ -42,10 +53,24 @@ export function createApp(
       crossOriginResourcePolicy: { policy: "cross-origin" },
     })
   );
-  app.use(cors());
-  // 5mb en vez de los 100kb por defecto: /api/extract-metadata-from-html
-  // recibe el HTML completo de una página que el propio cliente ya descargó.
-  app.use(express.json({ limit: "5mb" }));
+  app.use(
+    cors({
+      origin(origin, callback) {
+        // Sin cabecera Origin = no es un navegador (app nativa, server-to-server,
+        // health checks) — no es a quien CORS protege, se deja pasar.
+        if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+        return callback(new Error("Origen no permitido por CORS"));
+      },
+    })
+  );
+  // Límite propio y más alto SOLO para esta ruta (recibe el HTML completo de
+  // una página), montado antes del límite general: una vez que un body-parser
+  // procesa el cuerpo, express.json() ve `req._body` ya puesto y no lo vuelve
+  // a parsear, así que el límite de 100kb de abajo no le aplica a esta ruta.
+  app.use("/api/extract-metadata-from-html", express.json({ limit: "5mb" }));
+  // 100kb por defecto para el resto: de sobra para cualquier petición normal,
+  // nada más aquí sube archivos.
+  app.use(express.json({ limit: "100kb" }));
   app.use(rateLimiters.general);
 
   // Requiere sesión: sin esto, cualquiera (sin cuenta) podía hacer que el
@@ -92,7 +117,7 @@ export function createApp(
   });
 
   app.use("/api/auth", rateLimiters.auth, createAuthRouter(db, rateLimiters.writeAction));
-  app.use("/api/friends", createFriendsRouter(db, suggester, rateLimiters.writeAction));
+  app.use("/api/friends", createFriendsRouter(db, suggester, rateLimiters.writeAction, rateLimiters.ai));
   app.use("/api/lists", createOwnerListsRouter(db, extractMetadata));
   app.use("/api/l", createVisitorListsRouter(db, rateLimiters.writeAction));
 
@@ -106,8 +131,17 @@ export function createApp(
   // BD, etc.) llega aquí gracias a express-async-errors en vez de tumbar el
   // proceso con una promesa rechazada sin gestionar.
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    console.error("Error no manejado:", err);
     if (res.headersSent) return;
+    if (err instanceof Error && err.message === "Origen no permitido por CORS") {
+      return res.status(403).json({ error: err.message });
+    }
+    // body-parser marca los cuerpos demasiado grandes con status 413 en vez
+    // de lanzar un 500 — sin este caso, un límite de tamaño bien puesto se
+    // veía en los logs como un fallo interno en vez de lo que realmente es.
+    if (err instanceof Error && "status" in err && (err as { status?: number }).status === 413) {
+      return res.status(413).json({ error: "El cuerpo de la petición es demasiado grande" });
+    }
+    console.error("Error no manejado:", err);
     res.status(500).json({ error: "Error interno del servidor" });
   });
 

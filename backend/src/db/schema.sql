@@ -11,6 +11,12 @@ CREATE TABLE IF NOT EXISTS users (
 -- reconstruir un consentimiento que nunca se pidió.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
 
+-- Bloqueo de cuenta tras varios intentos de login fallidos (checklist de
+-- producción): complementa el rate limit por IP, que no frena a quien prueba
+-- contraseñas contra UNA cuenta concreta desde muchas IPs distintas.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INT NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
+
 -- `username` llegó después de que ya hubiera cuentas reales en producción, así
 -- que CREATE TABLE IF NOT EXISTS no lo habría añadido a una tabla existente.
 -- Se aplica con ALTER, rellenando primero cualquier fila que aún no tenga uno
