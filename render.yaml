@@ -1,0 +1,27 @@
+# Blueprint de Render para UN servicio nuevo: la versión web de la app
+# (previsualización/alfa rápida, nada que ver con el backend ya desplegado
+# manualmente — este archivo no lo toca ni lo referencia).
+#
+# Para usarlo: Render Dashboard → New + → Blueprint → selecciona este repo.
+# Render detecta este archivo y propone crear el servicio de abajo; tú
+# confirmas antes de que se cree nada.
+services:
+  - type: web
+    name: lista-de-deseos-web
+    runtime: static
+    rootDir: app
+    buildCommand: npm install && npm run build:web
+    staticPublishPath: dist
+    envVars:
+      - key: EXPO_PUBLIC_API_URL
+        value: https://app-listacumple.onrender.com
+    routes:
+      # Las rutas con parámetro (p. ej. /l/[shareToken]) se exportan como un
+      # único archivo literal ("[shareToken].html"), que nunca coincide con
+      # una URL real como /l/abc-123 — sin este comodín, abrir un enlace de
+      # lista compartida directamente (o refrescar la página) daría 404.
+      # Los archivos que sí existen tal cual (login, home, settings...) se
+      # siguen sirviendo directamente; esto solo entra cuando no hay match.
+      - type: rewrite
+        source: /*
+        destination: /index.html

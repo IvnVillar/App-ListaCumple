@@ -80,6 +80,9 @@ export const PRIVACY_POLICY_HTML = page(
 <h2>Seguridad</h2>
 <p>Las contraseñas se cifran con bcrypt, las conexiones viajan por HTTPS y aplicamos límites de peticiones para dificultar el abuso automatizado.</p>
 
+<h2>Si usas la versión web</h2>
+<p>La versión web de la app guarda tu sesión en el almacenamiento local de tu navegador (localStorage), con el único propósito de mantenerte conectado — el mismo papel que cumple en el móvil. No usamos cookies ni almacenamiento local con fines de analítica o publicidad, así que no hace falta un aviso de cookies para esto: es estrictamente necesario para el servicio que has pedido.</p>
+
 <h2>Cambios en esta política</h2>
 <p>Si la cambiamos de forma relevante, actualizaremos la fecha de arriba.</p>
 `
