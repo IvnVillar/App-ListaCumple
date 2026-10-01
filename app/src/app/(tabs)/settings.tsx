@@ -4,10 +4,11 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
+import { PrimaryButton } from "@/components/primary-button";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
-import { colors, shared, spacing } from "@/lib/styles";
+import { colors, fonts, shared, spacing } from "@/lib/styles";
 
 export default function SettingsScreen() {
   const { email, username, logout, updateUsername, deleteAccount } = useAuth();
@@ -71,8 +72,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={shared.screen}>
-      <Text style={shared.eyebrow}>Tu cuenta</Text>
-      <Text style={shared.title}>Ajustes</Text>
+      <Text style={[shared.title, { marginTop: spacing.lg }]}>Ajustes</Text>
 
       <View style={[shared.card, { flexDirection: "row", alignItems: "center", gap: spacing.md }]}>
         <View style={shared.iconCircle}>
@@ -80,7 +80,7 @@ export default function SettingsScreen() {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 12, color: colors.textSecondary }}>Sesión iniciada como</Text>
-          <Text style={{ fontWeight: "700", color: colors.text }} numberOfLines={1}>
+          <Text style={{ fontFamily: fonts.bold, color: colors.text }} numberOfLines={1}>
             {email ?? "—"}
           </Text>
         </View>
@@ -94,7 +94,7 @@ export default function SettingsScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 12, color: colors.textSecondary }}>Tu usuario (para que te añadan)</Text>
             {!editing && (
-              <Text style={{ fontWeight: "700", color: colors.text }} numberOfLines={1}>
+              <Text style={{ fontFamily: fonts.bold, color: colors.text }} numberOfLines={1}>
                 {username ? `@${username}` : "—"}
               </Text>
             )}
@@ -117,17 +117,13 @@ export default function SettingsScreen() {
             />
             {error && <Text style={shared.errorText}>{error}</Text>}
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
-              <TouchableOpacity
-                style={[shared.button, { flex: 1, marginTop: 0 }, (!usernameValid || saving) && shared.buttonDisabled]}
+              <PrimaryButton
+                label="Guardar"
                 onPress={handleSaveUsername}
-                disabled={!usernameValid || saving}
-              >
-                {saving ? (
-                  <ActivityIndicator color={colors.primaryText} />
-                ) : (
-                  <Text style={shared.buttonText}>Guardar</Text>
-                )}
-              </TouchableOpacity>
+                loading={saving}
+                disabled={!usernameValid}
+                style={{ flex: 1, marginTop: 0 }}
+              />
               <TouchableOpacity
                 style={[shared.secondaryButton, { flex: 1 }]}
                 onPress={() => setEditing(false)}
@@ -168,7 +164,7 @@ export default function SettingsScreen() {
         {deleting ? (
           <ActivityIndicator color={colors.danger} />
         ) : (
-          <Text style={{ color: colors.danger, fontSize: 13, fontWeight: "600" }}>Eliminar mi cuenta</Text>
+          <Text style={{ color: colors.danger, fontSize: 13, fontFamily: fonts.semiBold }}>Eliminar mi cuenta</Text>
         )}
       </TouchableOpacity>
     </View>

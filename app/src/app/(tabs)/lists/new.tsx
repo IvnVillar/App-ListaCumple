@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
+import { PrimaryButton } from "@/components/primary-button";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -83,13 +84,7 @@ export default function NewListScreen() {
 
       {error && <Text style={shared.errorText}>{error}</Text>}
 
-      <TouchableOpacity
-        style={[shared.button, (submitting || !title.trim()) && shared.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={submitting || !title.trim()}
-      >
-        <Text style={shared.buttonText}>{submitting ? "Creando..." : "Crear lista"}</Text>
-      </TouchableOpacity>
+      <PrimaryButton label="Crear lista" onPress={handleSubmit} loading={submitting} disabled={!title.trim()} />
     </ScrollView>
   );
 }

@@ -3,6 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Image, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
+import { PrimaryButton } from "@/components/primary-button";
 import { ProgressBar } from "@/components/progress-bar";
 import { StatusBadge } from "@/components/status-badge";
 import * as api from "@/lib/api";
@@ -10,7 +11,7 @@ import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { formatEventDate } from "@/lib/date";
 import { OCCASION_EMOJI, OCCASION_LABELS } from "@/lib/occasions";
-import { colors, shared, spacing } from "@/lib/styles";
+import { colors, fonts, shared, spacing } from "@/lib/styles";
 
 function ActionForm({
   item,
@@ -73,11 +74,12 @@ function ActionForm({
         />
       )}
       {error && <Text style={shared.errorText}>{error}</Text>}
-      <TouchableOpacity style={[shared.button, { marginTop: 0 }]} onPress={submit} disabled={busy}>
-        <Text style={shared.buttonText}>
-          {busy ? "Enviando..." : item.is_group_gift ? "🎉 Aportar" : "🎁 ¡Voy a regalar esto!"}
-        </Text>
-      </TouchableOpacity>
+      <PrimaryButton
+        label={item.is_group_gift ? "Aportar" : "¡Voy a regalar esto!"}
+        onPress={submit}
+        loading={busy}
+        style={{ marginTop: 0 }}
+      />
     </View>
   );
 }
@@ -139,7 +141,7 @@ export default function VisitorListScreen() {
   if (loadError || !list) {
     return (
       <View style={shared.center}>
-        <Text style={{ fontSize: 40, marginBottom: spacing.md }}>😕</Text>
+        <Ionicons name="alert-circle-outline" size={40} color={colors.textFaint} style={{ marginBottom: spacing.md }} />
         <Text style={{ color: colors.textSecondary }}>{loadError}</Text>
       </View>
     );
@@ -162,7 +164,7 @@ export default function VisitorListScreen() {
         contentContainerStyle={{ paddingBottom: 20 }}
         ListEmptyComponent={
           <View style={{ alignItems: "center", marginTop: 40 }}>
-            <Text style={{ fontSize: 40, marginBottom: spacing.sm }}>🎁</Text>
+            <Ionicons name="gift-outline" size={40} color={colors.textFaint} style={{ marginBottom: spacing.sm }} />
             <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
               Esta lista todavía no tiene artículos.
             </Text>
@@ -195,7 +197,7 @@ export default function VisitorListScreen() {
                   </View>
                 )}
                 <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ fontWeight: "700", color: colors.text }} numberOfLines={2}>
+                  <Text style={{ fontFamily: fonts.bold, color: colors.text }} numberOfLines={2}>
                     {item.title}
                   </Text>
                   {item.price != null && (
@@ -249,7 +251,7 @@ export default function VisitorListScreen() {
               {item.is_group_gift && item.group_gift && (
                 <View style={{ marginTop: spacing.md }}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
-                    <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: "600" }}>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, fontFamily: fonts.semiBold }}>
                       Aportado: {item.group_gift.total_contributed}
                       {item.price != null ? ` de ${item.price}` : ""}
                     </Text>

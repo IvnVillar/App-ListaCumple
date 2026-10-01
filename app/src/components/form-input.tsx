@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, TextInput, View, type TextInputProps } from "react-native";
-import { colors, radius } from "@/lib/styles";
+import { colors, fonts, radius } from "@/lib/styles";
 
 interface FormInputProps extends TextInputProps {
   icon?: keyof typeof Ionicons.glyphMap;
@@ -40,6 +40,7 @@ const localStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
+    fontFamily: fonts.regular,
     color: colors.text,
     backgroundColor: colors.surface,
   },

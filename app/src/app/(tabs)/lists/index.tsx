@@ -7,7 +7,7 @@ import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { OCCASION_EMOJI, OCCASION_LABELS } from "@/lib/occasions";
 import { useShareIntentContext } from "@/lib/shareIntent";
-import { colors, shared, spacing } from "@/lib/styles";
+import { colors, fonts, shared, spacing } from "@/lib/styles";
 
 export default function ListsScreen() {
   const { token } = useAuth();
@@ -76,8 +76,7 @@ export default function ListsScreen() {
 
   return (
     <View style={shared.screen}>
-      <Text style={shared.eyebrow}>Tus regalos</Text>
-      <Text style={shared.title}>Mis listas</Text>
+      <Text style={[shared.title, { marginTop: spacing.lg }]}>Mis listas</Text>
 
       {loadError && (
         <TouchableOpacity onPress={load}>
@@ -113,7 +112,7 @@ export default function ListsScreen() {
             <Text style={{ fontSize: 22 }}>📌</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primaryDark }}>{defaultList.title}</Text>
+            <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: colors.primaryDark }}>{defaultList.title}</Text>
             <Text style={{ color: colors.primaryDark, marginTop: 2, fontSize: 13 }}>
               Todo lo que guardas sin elegir ocasión
             </Text>
@@ -129,7 +128,7 @@ export default function ListsScreen() {
         ListEmptyComponent={
           !loadError ? (
             <View style={{ alignItems: "center", marginTop: 40 }}>
-              <Text style={{ fontSize: 40, marginBottom: spacing.md }}>🎁</Text>
+              <Ionicons name="gift-outline" size={40} color={colors.textFaint} style={{ marginBottom: spacing.md }} />
               <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
                 Aún no tienes listas para una ocasión concreta (cumpleaños, boda...).
               </Text>
@@ -155,7 +154,7 @@ export default function ListsScreen() {
               <Text style={{ fontSize: 22 }}>{OCCASION_EMOJI[item.occasion_type]}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text }}>{item.title}</Text>
+              <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: colors.text }}>{item.title}</Text>
               <Text style={{ color: colors.textSecondary, marginTop: 2, fontSize: 13 }}>
                 {OCCASION_LABELS[item.occasion_type]}
               </Text>

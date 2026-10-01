@@ -7,12 +7,12 @@ import { StatusBadge } from "@/components/status-badge";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { colors, shared, spacing } from "@/lib/styles";
+import { colors, fonts, shared, spacing } from "@/lib/styles";
 
 function AvatarInitial({ username }: { username: string }) {
   return (
     <View style={shared.iconCircle}>
-      <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primary }}>{username[0]?.toUpperCase()}</Text>
+      <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: colors.primary }}>{username[0]?.toUpperCase()}</Text>
     </View>
   );
 }
@@ -118,8 +118,7 @@ export default function FriendsScreen() {
 
   return (
     <ScrollView contentContainerStyle={shared.screen}>
-      <Text style={shared.eyebrow}>Comparte con quien quieras</Text>
-      <Text style={shared.title}>Amigos</Text>
+      <Text style={[shared.title, { marginTop: spacing.lg }]}>Amigos</Text>
       <Text style={shared.subtitle}>
         Añade amigos por su nombre de usuario: una vez aceptan, podéis ver las listas del otro directamente desde
         la app.
@@ -171,7 +170,7 @@ export default function FriendsScreen() {
               style={[shared.card, { flexDirection: "row", alignItems: "center", gap: spacing.md }]}
             >
               <AvatarInitial username={request.username} />
-              <Text style={{ flex: 1, fontWeight: "700", color: colors.text }} numberOfLines={1}>
+              <Text style={{ flex: 1, fontFamily: fonts.bold, color: colors.text }} numberOfLines={1}>
                 @{request.username}
               </Text>
               <TouchableOpacity onPress={() => handleAccept(request.id)} hitSlop={10} style={{ padding: 4 }}>
@@ -189,7 +188,7 @@ export default function FriendsScreen() {
         <Text style={shared.label}>Tus amigos</Text>
         {friends.length === 0 && outgoing.length === 0 ? (
           <View style={{ alignItems: "center", marginTop: 20 }}>
-            <Text style={{ fontSize: 40, marginBottom: spacing.sm }}>👋</Text>
+            <Ionicons name="people-outline" size={40} color={colors.textFaint} style={{ marginBottom: spacing.sm }} />
             <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
               Todavía no has añadido a ningún amigo.
             </Text>
@@ -209,7 +208,7 @@ export default function FriendsScreen() {
                 activeOpacity={0.7}
               >
                 <AvatarInitial username={friend.username} />
-                <Text style={{ flex: 1, fontWeight: "700", color: colors.text }} numberOfLines={1}>
+                <Text style={{ flex: 1, fontFamily: fonts.bold, color: colors.text }} numberOfLines={1}>
                   @{friend.username}
                 </Text>
                 <TouchableOpacity
@@ -229,7 +228,7 @@ export default function FriendsScreen() {
               >
                 <AvatarInitial username={request.username} />
                 <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ fontWeight: "700", color: colors.text }} numberOfLines={1}>
+                  <Text style={{ fontFamily: fonts.bold, color: colors.text }} numberOfLines={1}>
                     @{request.username}
                   </Text>
                   <StatusBadge label="Invitación pendiente" tone="accent" icon="time-outline" />

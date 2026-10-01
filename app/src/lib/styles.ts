@@ -1,5 +1,18 @@
 import { StyleSheet } from "react-native";
 
+// Plus Jakarta Sans en vez de la fuente del sistema: cada peso es un archivo
+// de fuente distinto (no una variante sintética de uno solo), así que en
+// cualquier texto que use uno de estos pesos hay que poner fontFamily, no
+// fontWeight — fontWeight no tiene efecto sobre una fuente estática como
+// esta. Cargada en _layout.tsx con expo-font antes de pintar nada.
+export const fonts = {
+  regular: "PlusJakartaSans_400Regular",
+  medium: "PlusJakartaSans_500Medium",
+  semiBold: "PlusJakartaSans_600SemiBold",
+  bold: "PlusJakartaSans_700Bold",
+  extraBold: "PlusJakartaSans_800ExtraBold",
+};
+
 // Los tonos de texto/acento están ajustados para cumplir el contraste
 // mínimo AA de WCAG (4.5:1) contra los fondos donde se usan como texto;
 // ver el cálculo en la auditoría de accesibilidad.
@@ -46,11 +59,13 @@ export const radius = {
   pill: 999,
 };
 
+// Sombra difuminada y tenue (en vez de una sombra genérica negra y marcada):
+// más radio, menos opacidad, para que las cards floten en vez de recortarse.
 export const shadow = {
   shadowColor: "#3A1F2E",
-  shadowOpacity: 0.08,
-  shadowRadius: 12,
-  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.06,
+  shadowRadius: 20,
+  shadowOffset: { width: 0, height: 8 },
   elevation: 2,
 };
 
@@ -68,29 +83,30 @@ export const shared = StyleSheet.create({
   },
 
   eyebrow: {
-    fontSize: 13,
-    fontWeight: "700",
+    fontSize: 12,
+    fontFamily: fonts.semiBold,
     color: colors.primary,
-    letterSpacing: 0.4,
+    letterSpacing: 1.1,
     textTransform: "uppercase",
     marginBottom: spacing.xs,
   },
   title: {
-    fontSize: 26,
-    fontWeight: "800",
+    fontSize: 28,
+    fontFamily: fonts.extraBold,
     color: colors.text,
     marginBottom: spacing.xs,
-    letterSpacing: -0.3,
+    letterSpacing: -0.6,
   },
   subtitle: {
     fontSize: 15,
+    fontFamily: fonts.regular,
     color: colors.textSecondary,
     marginBottom: spacing.xl,
-    lineHeight: 21,
+    lineHeight: 22,
   },
   label: {
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: fonts.semiBold,
     color: colors.textSecondary,
     marginBottom: spacing.sm,
     marginTop: spacing.lg,
@@ -103,6 +119,7 @@ export const shared = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: 14,
     fontSize: 16,
+    fontFamily: fonts.regular,
     color: colors.text,
     backgroundColor: colors.surface,
   },
@@ -125,7 +142,8 @@ export const shared = StyleSheet.create({
   buttonText: {
     color: colors.primaryText,
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
+    letterSpacing: -0.1,
   },
 
   secondaryButton: {
@@ -140,7 +158,7 @@ export const shared = StyleSheet.create({
   secondaryButtonText: {
     color: colors.text,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: fonts.semiBold,
   },
 
   errorText: {
@@ -168,7 +186,7 @@ export const shared = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: fonts.semiBold,
   },
 
   chip: {
@@ -188,7 +206,7 @@ export const shared = StyleSheet.create({
   },
   chipText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   chipTextActive: {

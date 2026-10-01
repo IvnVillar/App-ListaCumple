@@ -6,7 +6,7 @@ import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { OCCASION_EMOJI, OCCASION_LABELS } from "@/lib/occasions";
-import { colors, shared, spacing } from "@/lib/styles";
+import { colors, fonts, shared, spacing } from "@/lib/styles";
 
 function SuggestionsSection({ friendId, username }: { friendId: string; username: string }) {
   const { token } = useAuth();
@@ -31,8 +31,8 @@ function SuggestionsSection({ friendId, username }: { friendId: string; username
   return (
     <View style={[shared.card, { marginBottom: spacing.md }]}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.sm }}>
-        <Text style={{ fontSize: 18 }}>✨</Text>
-        <Text style={{ fontWeight: "700", color: colors.text, flex: 1 }}>Ideas de regalo con IA</Text>
+        <Ionicons name="sparkles-outline" size={18} color={colors.accent} />
+        <Text style={{ fontFamily: fonts.bold, color: colors.text, flex: 1 }}>Ideas de regalo con IA</Text>
       </View>
 
       {suggestions === null && !loading && (
@@ -59,7 +59,7 @@ function SuggestionsSection({ friendId, username }: { friendId: string; username
             <View style={{ gap: spacing.sm }}>
               {suggestions.map((suggestion, index) => (
                 <View key={index} style={{ gap: 2 }}>
-                  <Text style={{ fontWeight: "700", color: colors.text }}>{suggestion.title}</Text>
+                  <Text style={{ fontFamily: fonts.bold, color: colors.text }}>{suggestion.title}</Text>
                   <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{suggestion.reason}</Text>
                 </View>
               ))}
@@ -128,7 +128,7 @@ export default function FriendListsScreen() {
         ListEmptyComponent={
           !loadError ? (
             <View style={{ alignItems: "center", marginTop: 60 }}>
-              <Text style={{ fontSize: 48, marginBottom: spacing.md }}>🎁</Text>
+              <Ionicons name="gift-outline" size={44} color={colors.textFaint} style={{ marginBottom: spacing.md }} />
               <Text style={{ color: colors.textSecondary, textAlign: "center" }}>
                 Todavía no tiene ninguna lista.
               </Text>
@@ -154,7 +154,7 @@ export default function FriendListsScreen() {
               <Text style={{ fontSize: 22 }}>{OCCASION_EMOJI[item.occasion_type]}</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 16, fontWeight: "700", color: colors.text }}>{item.title}</Text>
+              <Text style={{ fontSize: 16, fontFamily: fonts.bold, color: colors.text }}>{item.title}</Text>
               <Text style={{ color: colors.textSecondary, marginTop: 2, fontSize: 13 }}>
                 {OCCASION_LABELS[item.occasion_type]}
               </Text>

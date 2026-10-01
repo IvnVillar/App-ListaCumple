@@ -20,7 +20,7 @@ import { useAuth } from "@/lib/auth";
 import { APP_BASE_URL } from "@/lib/config";
 import { formatEventDate } from "@/lib/date";
 import { OCCASION_EMOJI, OCCASION_LABELS } from "@/lib/occasions";
-import { colors, shared, spacing } from "@/lib/styles";
+import { colors, fonts, shared, spacing } from "@/lib/styles";
 
 function shareUrl(shareToken: string): string {
   // El backend (API_BASE_URL) no sirve esta ruta — es una pantalla de la
@@ -135,7 +135,7 @@ export default function ListDetailScreen() {
 
       <View style={{ marginBottom: spacing.lg }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 8 }}>
-          <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>
+          <Text style={{ fontSize: 13, fontFamily: fonts.bold, color: colors.text }}>
             {list.items_with_destination} de {list.items_total} con destino
           </Text>
         </View>
@@ -148,7 +148,7 @@ export default function ListDetailScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         ListEmptyComponent={
           <View style={{ alignItems: "center", marginTop: 40 }}>
-            <Text style={{ fontSize: 40, marginBottom: spacing.sm }}>📝</Text>
+            <Ionicons name="pricetag-outline" size={40} color={colors.textFaint} style={{ marginBottom: spacing.sm }} />
             <Text style={{ color: colors.textSecondary, textAlign: "center" }}>Sin artículos todavía.</Text>
           </View>
         }
@@ -179,7 +179,7 @@ export default function ListDetailScreen() {
               </View>
             )}
             <View style={{ flex: 1, gap: 4 }}>
-              <Text style={{ fontWeight: "700", color: colors.text }} numberOfLines={2}>
+              <Text style={{ fontFamily: fonts.bold, color: colors.text }} numberOfLines={2}>
                 {item.title}
               </Text>
               {item.price && (

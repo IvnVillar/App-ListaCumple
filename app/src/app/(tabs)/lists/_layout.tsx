@@ -1,8 +1,9 @@
 import { Stack } from "expo-router";
+import { fonts } from "@/lib/styles";
 
 export default function ListsLayout() {
   return (
-    <Stack screenOptions={{ headerBackTitle: "Atrás" }}>
+    <Stack screenOptions={{ headerBackTitle: "Atrás", headerTitleStyle: { fontFamily: fonts.semiBold } }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="new" options={{ title: "Nueva lista", presentation: "modal" }} />
       <Stack.Screen name="[listId]/index" options={{ headerShown: false }} />

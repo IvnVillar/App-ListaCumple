@@ -12,10 +12,11 @@ import {
   View,
 } from "react-native";
 import { FormInput } from "@/components/form-input";
+import { PrimaryButton } from "@/components/primary-button";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { colors, radius, shared, spacing } from "@/lib/styles";
+import { colors, fonts, radius, shared, spacing } from "@/lib/styles";
 
 export default function HomeScreen() {
   const { email, token } = useAuth();
@@ -63,7 +64,9 @@ export default function HomeScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView contentContainerStyle={shared.screen} keyboardShouldPersistTaps="handled">
-        <Text style={shared.eyebrow}>Hola{email ? ` de nuevo` : ""}</Text>
+        <Text style={{ fontFamily: fonts.medium, color: colors.textSecondary, fontSize: 15, marginTop: spacing.lg }}>
+          Hola{email ? " de nuevo" : ""}
+        </Text>
         <Text style={shared.title}>¿Qué le regalamos?</Text>
         <Text style={shared.subtitle}>Pega el enlace de un producto y se guarda directamente en Mis guardados.</Text>
 
@@ -77,17 +80,7 @@ export default function HomeScreen() {
           onSubmitEditing={handleAdd}
         />
         {error && <Text style={shared.errorText}>{error}</Text>}
-        <TouchableOpacity
-          style={[shared.button, (!url.trim() || saving) && shared.buttonDisabled]}
-          onPress={handleAdd}
-          disabled={!url.trim() || saving}
-        >
-          {saving ? (
-            <ActivityIndicator color={colors.primaryText} />
-          ) : (
-            <Text style={shared.buttonText}>📌 Guardar</Text>
-          )}
-        </TouchableOpacity>
+        <PrimaryButton label="Guardar" onPress={handleAdd} loading={saving} disabled={!url.trim()} />
 
         <Text style={[shared.label, { marginTop: spacing.xl }]}>Lo último de tus amigos</Text>
 
@@ -128,7 +121,7 @@ export default function HomeScreen() {
                   <Text style={{ color: colors.textSecondary, fontSize: 12 }} numberOfLines={1}>
                     @{entry.friend_username} guardó en {entry.list_title}
                   </Text>
-                  <Text style={{ fontWeight: "700", color: colors.text }} numberOfLines={1}>
+                  <Text style={{ fontFamily: fonts.bold, color: colors.text }} numberOfLines={1}>
                     {entry.title}
                   </Text>
                   {entry.price != null && (

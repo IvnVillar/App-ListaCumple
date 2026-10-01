@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "@/lib/auth";
-import { colors } from "@/lib/styles";
+import { colors, fonts } from "@/lib/styles";
 
 export default function TabsLayout() {
   const { token, isLoading } = useAuth();
@@ -32,7 +32,7 @@ export default function TabsLayout() {
           paddingBottom: 10,
           paddingTop: 8,
         },
-        tabBarLabelStyle: { fontSize: 12, fontWeight: "600" },
+        tabBarLabelStyle: { fontSize: 12, fontFamily: fonts.semiBold },
       }}
     >
       <Tabs.Screen

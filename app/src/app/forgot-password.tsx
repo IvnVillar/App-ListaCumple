@@ -1,9 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { FormInput } from "@/components/form-input";
+import { PrimaryButton } from "@/components/primary-button";
 import { ApiError, requestPasswordReset } from "@/lib/api";
-import { colors, shared } from "@/lib/styles";
+import { colors, fonts, shared } from "@/lib/styles";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
@@ -43,7 +45,7 @@ export default function ForgotPasswordScreen() {
               borderStyle: "dashed",
             }}
           >
-            <Text style={{ fontSize: 40, marginBottom: 12 }}>📬</Text>
+            <Ionicons name="mail-outline" size={36} color={colors.textFaint} style={{ marginBottom: 12 }} />
             <Text style={{ color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20 }}>
               Si existe una cuenta con ese email, revisa tu bandeja de entrada.
             </Text>
@@ -62,19 +64,13 @@ export default function ForgotPasswordScreen() {
 
             {error && <Text style={shared.errorText}>{error}</Text>}
 
-            <TouchableOpacity
-              style={[shared.button, (submitting || !email) && shared.buttonDisabled]}
-              onPress={handleSubmit}
-              disabled={submitting || !email}
-            >
-              <Text style={shared.buttonText}>{submitting ? "Enviando..." : "Enviar enlace"}</Text>
-            </TouchableOpacity>
+            <PrimaryButton label="Enviar enlace" onPress={handleSubmit} loading={submitting} disabled={!email} />
           </>
         )}
 
         <View style={{ marginTop: 24, alignItems: "center" }}>
           <Link href="/login">
-            <Text style={{ color: colors.primary, fontWeight: "700" }}>Volver a iniciar sesión</Text>
+            <Text style={{ color: colors.primary, fontFamily: fonts.bold }}>Volver a iniciar sesión</Text>
           </Link>
         </View>
       </ScrollView>

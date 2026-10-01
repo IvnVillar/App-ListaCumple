@@ -1,9 +1,10 @@
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { FormInput } from "@/components/form-input";
+import { PrimaryButton } from "@/components/primary-button";
 import { ApiError, resetPassword } from "@/lib/api";
-import { colors, shared } from "@/lib/styles";
+import { colors, fonts, shared } from "@/lib/styles";
 
 export default function ResetPasswordScreen() {
   const { token } = useLocalSearchParams<{ token?: string }>();
@@ -33,15 +34,13 @@ export default function ResetPasswordScreen() {
 
         {!token ? (
           <Text style={shared.errorText}>
-            Este enlace no es válido. Pide uno nuevo desde "¿Olvidaste tu contraseña?" en la pantalla de inicio de
+            Este enlace no es válido. Pide uno nuevo desde «¿Olvidaste tu contraseña?» en la pantalla de inicio de
             sesión.
           </Text>
         ) : done ? (
           <>
             <Text style={shared.subtitle}>Tu contraseña se ha actualizado. Ya puedes iniciar sesión con ella.</Text>
-            <TouchableOpacity style={shared.button} onPress={() => router.replace("/login")}>
-              <Text style={shared.buttonText}>Iniciar sesión</Text>
-            </TouchableOpacity>
+            <PrimaryButton label="Iniciar sesión" onPress={() => router.replace("/login")} />
           </>
         ) : (
           <>
@@ -58,19 +57,18 @@ export default function ResetPasswordScreen() {
 
             {error && <Text style={shared.errorText}>{error}</Text>}
 
-            <TouchableOpacity
-              style={[shared.button, (submitting || password.length < 8) && shared.buttonDisabled]}
+            <PrimaryButton
+              label="Guardar contraseña"
               onPress={handleSubmit}
-              disabled={submitting || password.length < 8}
-            >
-              <Text style={shared.buttonText}>{submitting ? "Guardando..." : "Guardar contraseña"}</Text>
-            </TouchableOpacity>
+              loading={submitting}
+              disabled={password.length < 8}
+            />
           </>
         )}
 
         <View style={{ marginTop: 24, alignItems: "center" }}>
           <Link href="/login">
-            <Text style={{ color: colors.primary, fontWeight: "700" }}>Volver a iniciar sesión</Text>
+            <Text style={{ color: colors.primary, fontFamily: fonts.bold }}>Volver a iniciar sesión</Text>
           </Link>
         </View>
       </ScrollView>

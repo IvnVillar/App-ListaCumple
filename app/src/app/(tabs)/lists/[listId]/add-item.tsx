@@ -3,11 +3,12 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
+import { PrimaryButton } from "@/components/primary-button";
 import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fetchHtmlFromDevice } from "@/lib/clientFetch";
-import { colors, shared, spacing } from "@/lib/styles";
+import { colors, fonts, shared, spacing } from "@/lib/styles";
 
 type Mode = "url" | "manual";
 
@@ -248,10 +249,10 @@ export default function AddItemScreen() {
             ]}
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, flex: 1 }}>
-              <Text style={{ fontSize: 18 }}>💰</Text>
-              <Text style={{ color: colors.text, fontSize: 15, fontWeight: "600", flex: 1 }}>
+              <Ionicons name="people-outline" size={18} color={colors.accent} />
+              <Text style={{ color: colors.text, fontSize: 15, fontFamily: fonts.semiBold, flex: 1 }}>
                 Bote común{"\n"}
-                <Text style={{ fontSize: 12, fontWeight: "400", color: colors.textSecondary }}>
+                <Text style={{ fontSize: 12, fontFamily: fonts.regular, color: colors.textSecondary }}>
                   varias personas aportan
                 </Text>
               </Text>
@@ -267,13 +268,7 @@ export default function AddItemScreen() {
 
       {error && <Text style={shared.errorText}>{error}</Text>}
 
-      <TouchableOpacity
-        style={[shared.button, (!canSubmit || submitting) && shared.buttonDisabled]}
-        onPress={handleSubmit}
-        disabled={!canSubmit || submitting}
-      >
-        <Text style={shared.buttonText}>{submitting ? "Añadiendo..." : "Añadir artículo"}</Text>
-      </TouchableOpacity>
+      <PrimaryButton label="Añadir artículo" onPress={handleSubmit} loading={submitting} disabled={!canSubmit} />
     </ScrollView>
   );
 }

@@ -1,10 +1,12 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { FormInput } from "@/components/form-input";
+import { PrimaryButton } from "@/components/primary-button";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { colors, shared } from "@/lib/styles";
+import { colors, fonts, shared } from "@/lib/styles";
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -41,7 +43,7 @@ export default function LoginScreen() {
               marginBottom: 20,
             }}
           >
-            <Text style={{ fontSize: 34 }}>🎁</Text>
+            <Ionicons name="gift-outline" size={32} color={colors.primary} />
           </View>
         </View>
 
@@ -69,18 +71,12 @@ export default function LoginScreen() {
 
         {error && <Text style={shared.errorText}>{error}</Text>}
 
-        <TouchableOpacity
-          style={[shared.button, (submitting || !email || !password) && shared.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={submitting || !email || !password}
-        >
-          <Text style={shared.buttonText}>{submitting ? "Entrando..." : "Entrar"}</Text>
-        </TouchableOpacity>
+        <PrimaryButton label="Entrar" onPress={handleSubmit} loading={submitting} disabled={!email || !password} />
 
         <View style={{ marginTop: 24, alignItems: "center" }}>
           <Link href="/register">
             <Text style={{ color: colors.textSecondary }}>
-              ¿No tienes cuenta? <Text style={{ color: colors.primary, fontWeight: "700" }}>Crea una</Text>
+              ¿No tienes cuenta? <Text style={{ color: colors.primary, fontFamily: fonts.bold }}>Crea una</Text>
             </Text>
           </Link>
         </View>
