@@ -5,7 +5,7 @@ import { buildTestApp } from "./testApp";
 
 async function registerAndGetToken(app: Express, email: string): Promise<string> {
   const username = email.split("@")[0];
-  const res = await request(app).post("/api/auth/register").send({ email, username, password: "supersecret" });
+  const res = await request(app).post("/api/auth/register").send({ email, username, password: "supersecret", accepted_terms: true, confirmed_age: true });
   return res.body.token;
 }
 

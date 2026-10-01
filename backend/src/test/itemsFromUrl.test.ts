@@ -35,7 +35,7 @@ describe("Creación de artículos pegando una URL (spec sección 2.a)", () => {
     app = await buildAppWithExtractor(extractor);
     const register = await request(app)
       .post("/api/auth/register")
-      .send({ email: "owner@example.com", username: "owner", password: "supersecret" });
+      .send({ email: "owner@example.com", username: "owner", password: "supersecret", accepted_terms: true, confirmed_age: true });
     token = register.body.token;
     const list = await request(app)
       .post("/api/lists")

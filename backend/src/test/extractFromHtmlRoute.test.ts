@@ -11,7 +11,7 @@ describe("POST /api/extract-metadata-from-html (spec: el móvil descarga cuando 
     app = await buildTestApp();
     const register = await request(app)
       .post("/api/auth/register")
-      .send({ email: "ana@example.com", username: "ana", password: "supersecret" });
+      .send({ email: "ana@example.com", username: "ana", password: "supersecret", accepted_terms: true, confirmed_age: true });
     token = register.body.token;
   });
 

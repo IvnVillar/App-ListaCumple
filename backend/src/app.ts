@@ -15,6 +15,7 @@ import { createOwnerListsRouter, type MetadataExtractor } from "./routes/ownerLi
 import { createVisitorListsRouter } from "./routes/visitorLists";
 import { claudeSuggester } from "./ai/claudeSuggester";
 import type { Suggester } from "./services/suggestions";
+import { PRIVACY_POLICY_HTML, TERMS_OF_SERVICE_HTML } from "./legalPages";
 
 const extractFromHtmlSchema = z.object({
   url: z.string().min(1),
@@ -96,6 +97,10 @@ export function createApp(
   app.use("/api/l", createVisitorListsRouter(db, rateLimiters.writeAction));
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
+
+  // URL pública estable para los textos legales, sin montar hosting nuevo.
+  app.get("/privacy", (_req, res) => res.type("html").send(PRIVACY_POLICY_HTML));
+  app.get("/terms", (_req, res) => res.type("html").send(TERMS_OF_SERVICE_HTML));
 
   // Red de seguridad: cualquier error no capturado explícitamente (fallo de
   // BD, etc.) llega aquí gracias a express-async-errors en vez de tumbar el

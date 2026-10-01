@@ -15,12 +15,12 @@ describe("Re-guardar (spec tipo Pinterest)", () => {
 
     const owner = await request(app)
       .post("/api/auth/register")
-      .send({ email: "owner@example.com", username: "owner", password: "supersecret" });
+      .send({ email: "owner@example.com", username: "owner", password: "supersecret", accepted_terms: true, confirmed_age: true });
     ownerToken = owner.body.token;
 
     const saver = await request(app)
       .post("/api/auth/register")
-      .send({ email: "saver@example.com", username: "saver", password: "supersecret" });
+      .send({ email: "saver@example.com", username: "saver", password: "supersecret", accepted_terms: true, confirmed_age: true });
     saverToken = saver.body.token;
 
     const list = await request(app)

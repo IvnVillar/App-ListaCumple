@@ -19,7 +19,15 @@ const credentialsSchema = z.object({
     .max(72, "La contraseña no puede tener más de 72 caracteres"),
 });
 
-const registerSchema = credentialsSchema.extend({ username: usernameSchema });
+const registerSchema = credentialsSchema.extend({
+  username: usernameSchema,
+  // El cliente solo deja marcar estas casillas si están a true (checklist
+  // legal: aceptación de Términos/Privacidad + edad mínima), pero se vuelve
+  // a exigir aquí por si alguien llama a la API directamente sin pasar por
+  // la pantalla de registro.
+  accepted_terms: z.literal(true, { message: "Debes aceptar los Términos y la Política de Privacidad" }),
+  confirmed_age: z.literal(true, { message: "Debes confirmar que tienes la edad mínima requerida" }),
+});
 
 interface UserRow {
   id: string;
@@ -52,12 +60,10 @@ export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Ro
     const id = randomUUID();
     const passwordHash = await hashPassword(password);
     try {
-      await db.query("INSERT INTO users (id, email, username, password_hash) VALUES ($1, $2, $3, $4)", [
-        id,
-        email,
-        username,
-        passwordHash,
-      ]);
+      await db.query(
+        "INSERT INTO users (id, email, username, password_hash, terms_accepted_at) VALUES ($1, $2, $3, $4, now())",
+        [id, email, username, passwordHash]
+      );
     } catch (err) {
       // La comprobación SELECT de arriba no es atómica: dos registros con el
       // mismo email o usuario a la vez pueden pasarla ambos y chocar aquí
@@ -115,6 +121,16 @@ export function createAuthRouter(db: Db, writeActionLimiter: RequestHandler): Ro
       }
       throw err;
     }
+  });
+
+  // Derecho de supresión (checklist legal): borra la cuenta y, por los
+  // ON DELETE CASCADE del esquema, todo lo que depende de ella (listas,
+  // artículos, reservas/aportaciones sobre esos artículos, amistades). Los
+  // alias de reserva/aportación que ESTE usuario dejó en listas de otros no
+  // están ligados a su cuenta (son solo texto libre), así que no se tocan.
+  router.delete("/account", requireAuth, writeActionLimiter, async (req, res) => {
+    await db.query("DELETE FROM users WHERE id = $1", [req.userId!]);
+    return res.status(204).send();
   });
 
   return router;

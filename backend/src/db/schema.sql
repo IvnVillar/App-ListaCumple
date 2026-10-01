@@ -5,6 +5,12 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Prueba de que la cuenta aceptó los Términos/Privacidad y confirmó la edad
+-- mínima al registrarse (checklist legal: "check form consents"). Las
+-- cuentas creadas antes de este cambio se quedan en NULL — no se puede
+-- reconstruir un consentimiento que nunca se pidió.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS terms_accepted_at TIMESTAMPTZ;
+
 -- `username` llegó después de que ya hubiera cuentas reales en producción, así
 -- que CREATE TABLE IF NOT EXISTS no lo habría añadido a una tabla existente.
 -- Se aplica con ALTER, rellenando primero cualquier fila que aún no tenga uno

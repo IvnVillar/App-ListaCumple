@@ -29,7 +29,7 @@ describe("Endurecimiento de seguridad", () => {
     app = await buildAppWithExtractor(stubExtractor);
     const register = await request(app)
       .post("/api/auth/register")
-      .send({ email: "ana@example.com", username: "ana", password: "supersecret" });
+      .send({ email: "ana@example.com", username: "ana", password: "supersecret", accepted_terms: true, confirmed_age: true });
     token = register.body.token;
   });
 
@@ -66,5 +66,15 @@ describe("Endurecimiento de seguridad", () => {
       )
     );
     expect(attempts.some((res) => res.status === 429)).toBe(true);
+  });
+
+  it("sirve la Política de Privacidad y los Términos de Servicio en una URL pública (checklist legal)", async () => {
+    const privacy = await request(app).get("/privacy");
+    expect(privacy.status).toBe(200);
+    expect(privacy.text).toContain("Política de Privacidad");
+
+    const terms = await request(app).get("/terms");
+    expect(terms.status).toBe(200);
+    expect(terms.text).toContain("Términos de Servicio");
   });
 });

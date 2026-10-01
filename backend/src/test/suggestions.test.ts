@@ -24,19 +24,19 @@ describe("Sugerencias de regalo con IA", () => {
 
     const owner = await request(app)
       .post("/api/auth/register")
-      .send({ email: "owner@example.com", username: "owner", password: "supersecret" });
+      .send({ email: "owner@example.com", username: "owner", password: "supersecret", accepted_terms: true, confirmed_age: true });
     ownerToken = owner.body.token;
     const decoded = JSON.parse(Buffer.from(ownerToken.split(".")[1], "base64").toString());
     ownerId = decoded.userId;
 
     const friend = await request(app)
       .post("/api/auth/register")
-      .send({ email: "friend@example.com", username: "friend", password: "supersecret" });
+      .send({ email: "friend@example.com", username: "friend", password: "supersecret", accepted_terms: true, confirmed_age: true });
     friendToken = friend.body.token;
 
     const stranger = await request(app)
       .post("/api/auth/register")
-      .send({ email: "stranger@example.com", username: "stranger", password: "supersecret" });
+      .send({ email: "stranger@example.com", username: "stranger", password: "supersecret", accepted_terms: true, confirmed_age: true });
     strangerToken = stranger.body.token;
 
     const send = await request(app)
@@ -94,7 +94,7 @@ describe("Sugerencias de regalo con IA", () => {
 
     const owner = await request(failingApp)
       .post("/api/auth/register")
-      .send({ email: "owner2@example.com", username: "owner2", password: "supersecret" });
+      .send({ email: "owner2@example.com", username: "owner2", password: "supersecret", accepted_terms: true, confirmed_age: true });
     const list = await request(failingApp)
       .post("/api/lists")
       .set("Authorization", `Bearer ${owner.body.token}`)
@@ -107,7 +107,7 @@ describe("Sugerencias de regalo con IA", () => {
 
     const friend = await request(failingApp)
       .post("/api/auth/register")
-      .send({ email: "friend2@example.com", username: "friend2", password: "supersecret" });
+      .send({ email: "friend2@example.com", username: "friend2", password: "supersecret", accepted_terms: true, confirmed_age: true });
     const send = await request(failingApp)
       .post("/api/friends/requests")
       .set("Authorization", `Bearer ${friend.body.token}`)
