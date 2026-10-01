@@ -9,6 +9,12 @@ export class NotFoundError extends Error {}
 export class ExpiredError extends Error {}
 export class InvalidOperationError extends Error {}
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function assertUuid(id: string, notFoundMessage: string): void {
+  if (!UUID_RE.test(id)) throw new NotFoundError(notFoundMessage);
+}
+
 interface VisitorItemRow extends ItemRow {
   reserver_alias: string | null;
   total_contributed: string | null;
@@ -56,6 +62,7 @@ function toItemView(row: VisitorItemRow): VisitorItemView {
 }
 
 async function assertListActive(db: Db, shareToken: string): Promise<ListRow> {
+  assertUuid(shareToken, "Lista no encontrada");
   const result = await db.query<ListRow>("SELECT * FROM lists WHERE share_token = $1", [shareToken]);
   const list = result.rows[0];
   if (!list) throw new NotFoundError("Lista no encontrada");
@@ -93,6 +100,7 @@ export async function reserveItem(
   alias: string
 ): Promise<void> {
   const list = await assertListActive(db, shareToken);
+  assertUuid(itemId, "Artículo no encontrado");
 
   const itemResult = await db.query<ItemRow>("SELECT * FROM items WHERE id = $1 AND list_id = $2", [
     itemId,
@@ -124,6 +132,7 @@ export async function contributeToItem(
   amount: number
 ): Promise<void> {
   const list = await assertListActive(db, shareToken);
+  assertUuid(itemId, "Artículo no encontrado");
 
   const itemResult = await db.query<ItemRow>("SELECT * FROM items WHERE id = $1 AND list_id = $2", [
     itemId,
