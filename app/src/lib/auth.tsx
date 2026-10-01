@@ -12,8 +12,15 @@ interface AuthContextValue {
   username: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, username: string, password: string) => Promise<void>;
+  register: (
+    email: string,
+    username: string,
+    password: string,
+    acceptedTerms: boolean,
+    confirmedAge: boolean
+  ) => Promise<void>;
   updateUsername: (username: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -58,8 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await api.login(email, password);
       await persistSession(res.token, email, res.username);
     },
-    async register(email, username, password) {
-      const res = await api.register(email, username, password);
+    async register(email, username, password, acceptedTerms, confirmedAge) {
+      const res = await api.register(email, username, password, acceptedTerms, confirmedAge);
       await persistSession(res.token, email, res.username);
     },
     async updateUsername(username) {
@@ -67,6 +74,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await api.updateUsername(token, username);
       setUsername(res.username);
       await secureStorage.setItem(USERNAME_KEY, res.username);
+    },
+    async deleteAccount() {
+      if (!token) return;
+      await api.deleteAccount(token);
+      setToken(null);
+      setEmail(null);
+      setUsername(null);
+      await Promise.all([
+        secureStorage.removeItem(TOKEN_KEY),
+        secureStorage.removeItem(EMAIL_KEY),
+        secureStorage.removeItem(USERNAME_KEY),
+      ]);
     },
     async logout() {
       setToken(null);

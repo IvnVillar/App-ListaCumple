@@ -105,7 +105,11 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 {entry.image_url ? (
-                  <Image source={{ uri: entry.image_url }} style={{ width: 48, height: 48, borderRadius: 12 }} />
+                  <Image
+                    source={{ uri: entry.image_url }}
+                    accessibilityLabel={`Foto de ${entry.title}`}
+                    style={{ width: 48, height: 48, borderRadius: 12 }}
+                  />
                 ) : (
                   <View
                     style={{

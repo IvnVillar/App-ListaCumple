@@ -34,11 +34,29 @@ export interface AuthResponse {
   username: string;
 }
 
-export function register(email: string, username: string, password: string) {
+export function register(
+  email: string,
+  username: string,
+  password: string,
+  acceptedTerms: boolean,
+  confirmedAge: boolean
+) {
   return request<AuthResponse>("/api/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, username, password }),
+    body: JSON.stringify({
+      email,
+      username,
+      password,
+      accepted_terms: acceptedTerms,
+      confirmed_age: confirmedAge,
+    }),
   });
+}
+
+// Derecho de supresión (checklist legal): borra la cuenta y, en cascada,
+// todo lo que depende de ella.
+export function deleteAccount(token: string) {
+  return request<void>("/api/auth/account", { method: "DELETE", token });
 }
 
 export function login(email: string, password: string) {

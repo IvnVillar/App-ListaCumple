@@ -1,16 +1,19 @@
 import { StyleSheet } from "react-native";
 
+// Los tonos de texto/acento están ajustados para cumplir el contraste
+// mínimo AA de WCAG (4.5:1) contra los fondos donde se usan como texto;
+// ver el cálculo en la auditoría de accesibilidad.
 export const colors = {
   background: "#FFF9F6",
   surface: "#FFFFFF",
   text: "#241B2F",
-  textSecondary: "#8A7F91",
-  textFaint: "#B7ACB8",
+  textSecondary: "#797080",
+  textFaint: "#968D97",
   border: "#F0E4E8",
   borderStrong: "#E4D5DA",
 
-  primary: "#E8467A",
-  primaryDark: "#CC3565",
+  primary: "#CC3E6B",
+  primaryDark: "#C23260",
   primarySoft: "#FDE7EF",
   primaryText: "#FFFFFF",
 
@@ -20,7 +23,7 @@ export const colors = {
   success: "#16A34A",
   successSoft: "#E7F9EE",
 
-  danger: "#DC2626",
+  danger: "#D32424",
   dangerSoft: "#FDECEC",
 
   card: "#FFF3EF",

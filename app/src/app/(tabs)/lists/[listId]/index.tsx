@@ -159,7 +159,11 @@ export default function ListDetailScreen() {
             activeOpacity={0.7}
           >
             {item.image_url ? (
-              <Image source={{ uri: item.image_url }} style={{ width: 52, height: 52, borderRadius: 12 }} />
+              <Image
+                source={{ uri: item.image_url }}
+                accessibilityLabel={`Foto de ${item.title}`}
+                style={{ width: 52, height: 52, borderRadius: 12 }}
+              />
             ) : (
               <View
                 style={{

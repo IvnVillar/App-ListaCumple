@@ -1,26 +1,58 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import { Link, router } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { colors, shared } from "@/lib/styles";
+import { API_BASE_URL } from "@/lib/config";
+import { colors, shared, spacing } from "@/lib/styles";
+
+function ConsentCheckbox({
+  checked,
+  onToggle,
+  children,
+}: {
+  checked: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onToggle}
+      style={{ flexDirection: "row", alignItems: "flex-start", gap: spacing.sm, marginTop: spacing.md }}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+    >
+      <Ionicons
+        name={checked ? "checkbox" : "square-outline"}
+        size={20}
+        color={checked ? colors.primary : colors.textFaint}
+      />
+      <Text style={{ flex: 1, color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>{children}</Text>
+    </TouchableOpacity>
+  );
+}
 
 export default function RegisterScreen() {
   const { register } = useAuth();
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [confirmedAge, setConfirmedAge] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const usernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(username.trim());
+  const canSubmit = !!email && usernameValid && password.length >= 8 && acceptedTerms && confirmedAge;
 
   async function handleSubmit() {
     setError(null);
     setSubmitting(true);
     try {
-      await register(email.trim(), username.trim(), password);
+      await register(email.trim(), username.trim(), password, acceptedTerms, confirmedAge);
       router.replace("/home");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "No se pudo crear la cuenta");
@@ -81,15 +113,27 @@ export default function RegisterScreen() {
           placeholder="Al menos 8 caracteres"
         />
 
+        <ConsentCheckbox checked={acceptedTerms} onToggle={() => setAcceptedTerms((v) => !v)}>
+          Acepto los{" "}
+          <Text style={{ color: colors.primary, fontWeight: "700" }} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE_URL}/terms`)}>
+            Términos de servicio
+          </Text>{" "}
+          y la{" "}
+          <Text style={{ color: colors.primary, fontWeight: "700" }} onPress={() => WebBrowser.openBrowserAsync(`${API_BASE_URL}/privacy`)}>
+            Política de privacidad
+          </Text>
+        </ConsentCheckbox>
+
+        <ConsentCheckbox checked={confirmedAge} onToggle={() => setConfirmedAge((v) => !v)}>
+          Confirmo que tengo 16 años o más
+        </ConsentCheckbox>
+
         {error && <Text style={shared.errorText}>{error}</Text>}
 
         <TouchableOpacity
-          style={[
-            shared.button,
-            (submitting || !email || !usernameValid || password.length < 8) && shared.buttonDisabled,
-          ]}
+          style={[shared.button, (submitting || !canSubmit) && shared.buttonDisabled]}
           onPress={handleSubmit}
-          disabled={submitting || !email || !usernameValid || password.length < 8}
+          disabled={submitting || !canSubmit}
         >
           <Text style={shared.buttonText}>{submitting ? "Creando..." : "Crear cuenta"}</Text>
         </TouchableOpacity>

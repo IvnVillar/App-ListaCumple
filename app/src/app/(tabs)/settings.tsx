@@ -1,24 +1,52 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import { router } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { API_BASE_URL } from "@/lib/config";
 import { colors, shared, spacing } from "@/lib/styles";
 
 export default function SettingsScreen() {
-  const { email, username, logout, updateUsername } = useAuth();
+  const { email, username, logout, updateUsername, deleteAccount } = useAuth();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const usernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(draft.trim());
 
   async function handleLogout() {
     await logout();
     router.replace("/login");
+  }
+
+  function confirmDeleteAccount() {
+    Alert.alert(
+      "Eliminar tu cuenta",
+      "Se borrarán tu cuenta, tus listas y todo lo que hay en ellas. Esto no se puede deshacer.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteAccount();
+              router.replace("/login");
+            } catch {
+              Alert.alert("No se pudo eliminar la cuenta", "Inténtalo de nuevo en unos segundos.");
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   }
 
   function startEditing() {
@@ -121,6 +149,27 @@ export default function SettingsScreen() {
       >
         <Ionicons name="log-out-outline" size={18} color={colors.danger} />
         <Text style={[shared.secondaryButtonText, { color: colors.danger }]}>Cerrar sesión</Text>
+      </TouchableOpacity>
+
+      <View style={{ marginTop: spacing.xxl, alignItems: "center", gap: spacing.sm }}>
+        <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync(`${API_BASE_URL}/privacy`)}>
+          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Política de privacidad</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => WebBrowser.openBrowserAsync(`${API_BASE_URL}/terms`)}>
+          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Términos de servicio</Text>
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity
+        style={{ marginTop: spacing.xl, alignItems: "center", paddingVertical: spacing.sm }}
+        onPress={confirmDeleteAccount}
+        disabled={deleting}
+      >
+        {deleting ? (
+          <ActivityIndicator color={colors.danger} />
+        ) : (
+          <Text style={{ color: colors.danger, fontSize: 13, fontWeight: "600" }}>Eliminar mi cuenta</Text>
+        )}
       </TouchableOpacity>
     </View>
   );

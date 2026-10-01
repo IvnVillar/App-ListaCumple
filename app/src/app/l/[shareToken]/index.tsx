@@ -175,7 +175,11 @@ export default function VisitorListScreen() {
             <View style={[shared.card, isTaken && { opacity: 0.6 }]}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
                 {item.image_url ? (
-                  <Image source={{ uri: item.image_url }} style={{ width: 56, height: 56, borderRadius: 14 }} />
+                  <Image
+                    source={{ uri: item.image_url }}
+                    accessibilityLabel={`Foto de ${item.title}`}
+                    style={{ width: 56, height: 56, borderRadius: 14 }}
+                  />
                 ) : (
                   <View
                     style={{
