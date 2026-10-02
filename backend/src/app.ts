@@ -16,8 +16,9 @@ import { createVisitorListsRouter } from "./routes/visitorLists";
 import { claudeSuggester } from "./ai/claudeSuggester";
 import type { Suggester } from "./services/suggestions";
 import { PRIVACY_POLICY_HTML, TERMS_OF_SERVICE_HTML } from "./legalPages";
-import type { Mailer } from "./mail/mailer";
-import { resendMailer } from "./mail/resendMailer";
+import type { Mailer, SendEmail } from "./mail/mailer";
+import { resendMailer, sendEmail as defaultSendEmail } from "./mail/resendMailer";
+import { createAdminRouter } from "./routes/admin";
 
 const extractFromHtmlSchema = z.object({
   url: z.string().min(1),
@@ -40,7 +41,8 @@ export function createApp(
   db: Db,
   extractMetadata: MetadataExtractor = defaultExtractMetadata,
   suggester: Suggester = claudeSuggester,
-  mailer: Mailer = resendMailer
+  mailer: Mailer = resendMailer,
+  sendEmail: SendEmail = defaultSendEmail
 ): Express {
   const app = express();
   const rateLimiters = createRateLimiters();
@@ -128,6 +130,7 @@ export function createApp(
   app.use("/api/friends", createFriendsRouter(db, suggester, rateLimiters.writeAction, rateLimiters.ai));
   app.use("/api/lists", createOwnerListsRouter(db, extractMetadata));
   app.use("/api/l", createVisitorListsRouter(db, rateLimiters.writeAction));
+  app.use("/api/admin", createAdminRouter(db, sendEmail, rateLimiters.broadcast));
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
 

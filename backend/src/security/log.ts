@@ -11,7 +11,8 @@ export type SecurityEvent =
   | "account_locked"
   | "account_deleted"
   | "password_reset_requested"
-  | "password_reset_completed";
+  | "password_reset_completed"
+  | "release_broadcast_sent";
 
 export function logSecurityEvent(event: SecurityEvent, details: Record<string, unknown>): void {
   console.log(

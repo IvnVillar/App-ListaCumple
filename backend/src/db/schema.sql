@@ -31,6 +31,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expires_at TIMESTAMPTZ
 -- hasta que caduquen solos o el usuario cambie su contraseña.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INT NOT NULL DEFAULT 0;
 
+-- Avisos de nueva versión por email (checklist de producto): cada cuenta
+-- puede desactivarlos desde Ajustes sin perder el resto de funcionalidad.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS release_notifications_enabled BOOLEAN NOT NULL DEFAULT true;
+
 -- `username` llegó después de que ya hubiera cuentas reales en producción, así
 -- que CREATE TABLE IF NOT EXISTS no lo habría añadido a una tabla existente.
 -- Se aplica con ALTER, rellenando primero cualquier fila que aún no tenga uno

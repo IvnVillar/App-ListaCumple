@@ -1,22 +1,46 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
-import { router } from "expo-router";
-import { useState } from "react";
-import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { ActivityIndicator, Alert, Switch, Text, TouchableOpacity, View } from "react-native";
 import { FormInput } from "@/components/form-input";
 import { PrimaryButton } from "@/components/primary-button";
+import * as api from "@/lib/api";
 import { ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { API_BASE_URL } from "@/lib/config";
 import { colors, fonts, shared, spacing } from "@/lib/styles";
 
 export default function SettingsScreen() {
-  const { email, username, logout, updateUsername, deleteAccount } = useAuth();
+  const { email, username, token, logout, updateUsername, deleteAccount } = useAuth();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [releaseNotifications, setReleaseNotifications] = useState<boolean | null>(null);
+  const [savingNotifPref, setSavingNotifPref] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) return;
+      api.getMe(token).then((me) => setReleaseNotifications(me.release_notifications_enabled)).catch(() => {});
+    }, [token])
+  );
+
+  async function handleToggleReleaseNotifications(value: boolean) {
+    if (!token) return;
+    setReleaseNotifications(value);
+    setSavingNotifPref(true);
+    try {
+      await api.updateNotificationPreferences(token, value);
+    } catch {
+      setReleaseNotifications(!value);
+    } finally {
+      setSavingNotifPref(false);
+    }
+  }
 
   const usernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(draft.trim());
 
@@ -134,6 +158,22 @@ export default function SettingsScreen() {
             </View>
           </View>
         )}
+      </View>
+
+      <View style={[shared.card, { flexDirection: "row", alignItems: "center", gap: spacing.md }]}>
+        <View style={shared.iconCircle}>
+          <Ionicons name="rocket-outline" size={20} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontFamily: fonts.semiBold, color: colors.text }}>Avisarme de nuevas versiones</Text>
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>Un email cuando haya una build nueva</Text>
+        </View>
+        <Switch
+          value={releaseNotifications ?? true}
+          onValueChange={handleToggleReleaseNotifications}
+          disabled={releaseNotifications === null || savingNotifPref}
+          trackColor={{ true: colors.primary, false: colors.border }}
+        />
       </View>
 
       <TouchableOpacity

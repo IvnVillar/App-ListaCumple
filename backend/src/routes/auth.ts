@@ -173,6 +173,31 @@ export function createAuthRouter(
     }
   });
 
+  // Ajustes lee aquí si el aviso de nuevas versiones está activado, ya que
+  // ni el login ni el registro devuelven esa preferencia.
+  router.get("/me", requireAuth, async (req, res) => {
+    const result = await db.query<{
+      email: string;
+      username: string;
+      release_notifications_enabled: boolean;
+    }>("SELECT email, username, release_notifications_enabled FROM users WHERE id = $1", [req.userId!]);
+    const user = result.rows[0];
+    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+    return res.json(user);
+  });
+
+  router.patch("/notification-preferences", requireAuth, writeActionLimiter, async (req, res) => {
+    const parsed = z.object({ release_notifications_enabled: z.boolean() }).safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.issues[0].message });
+    }
+    await db.query("UPDATE users SET release_notifications_enabled = $2 WHERE id = $1", [
+      req.userId!,
+      parsed.data.release_notifications_enabled,
+    ]);
+    return res.json({ release_notifications_enabled: parsed.data.release_notifications_enabled });
+  });
+
   // Derecho de supresión (checklist legal): borra la cuenta y, por los
   // ON DELETE CASCADE del esquema, todo lo que depende de ella (listas,
   // artículos, reservas/aportaciones sobre esos artículos, amistades). Los

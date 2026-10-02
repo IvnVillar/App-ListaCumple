@@ -22,6 +22,11 @@ export interface RateLimiters {
   // que nadie pueda usarlo para bombardear de emails una cuenta ajena ni
   // para probar tokens de reset por fuerza bruta.
   passwordReset: RateLimitRequestHandler;
+  // Aviso de nueva versión a todas las cuentas: una llamada manda un email
+  // por usuario, así que aquí un límite bajo es sobre todo para frenar un
+  // doble clic o un script en bucle, no un ataque (la clave de admin ya es
+  // la barrera principal).
+  broadcast: RateLimitRequestHandler;
   // Suelo general para cualquier otra ruta no cubierta por los de arriba.
   general: RateLimitRequestHandler;
 }
@@ -40,6 +45,7 @@ export function createRateLimiters(): RateLimiters {
     writeAction: rateLimit({ windowMs: WINDOW_MS, limit: 30, standardHeaders: true, legacyHeaders: false }),
     ai: rateLimit({ windowMs: WINDOW_MS, limit: 10, standardHeaders: true, legacyHeaders: false }),
     passwordReset: rateLimit({ windowMs: WINDOW_MS, limit: 5, standardHeaders: true, legacyHeaders: false }),
+    broadcast: rateLimit({ windowMs: WINDOW_MS, limit: 3, standardHeaders: true, legacyHeaders: false }),
     general: rateLimit({ windowMs: WINDOW_MS, limit: 300, standardHeaders: true, legacyHeaders: false }),
   };
 }

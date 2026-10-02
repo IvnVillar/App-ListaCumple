@@ -73,6 +73,24 @@ export function resetPassword(token: string, password: string) {
   });
 }
 
+export interface Me {
+  email: string;
+  username: string;
+  release_notifications_enabled: boolean;
+}
+
+export function getMe(token: string) {
+  return request<Me>("/api/auth/me", { token });
+}
+
+export function updateNotificationPreferences(token: string, releaseNotificationsEnabled: boolean) {
+  return request<{ release_notifications_enabled: boolean }>("/api/auth/notification-preferences", {
+    method: "PATCH",
+    token,
+    body: JSON.stringify({ release_notifications_enabled: releaseNotificationsEnabled }),
+  });
+}
+
 export function login(email: string, password: string) {
   return request<AuthResponse>("/api/auth/login", {
     method: "POST",
