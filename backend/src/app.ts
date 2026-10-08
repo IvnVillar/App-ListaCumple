@@ -130,7 +130,7 @@ export function createApp(
   app.use("/api/friends", createFriendsRouter(db, suggester, rateLimiters.writeAction, rateLimiters.ai));
   app.use("/api/lists", createOwnerListsRouter(db, extractMetadata));
   app.use("/api/l", createVisitorListsRouter(db, rateLimiters.writeAction));
-  app.use("/api/admin", createAdminRouter(db, sendEmail, rateLimiters.broadcast));
+  app.use("/api/admin", createAdminRouter(db, sendEmail, rateLimiters.broadcast, rateLimiters.passwordReset));
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
 
