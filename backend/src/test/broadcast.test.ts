@@ -14,7 +14,9 @@ describe("Aviso de nueva versión (broadcast de admin)", () => {
   beforeEach(async () => {
     sentEmails = [];
     const stubSendEmail: SendEmail = async (to, subject) => {
+      if (to.startsWith("rebota")) return false;
       sentEmails.push({ to, subject });
+      return true;
     };
     db = await createPgliteDb();
     app = createApp(db, undefined, undefined, undefined, stubSendEmail);
@@ -79,6 +81,37 @@ describe("Aviso de nueva versión (broadcast de admin)", () => {
     expect(res.body).toEqual({ sent: 2, failed: 0, skipped: 1 });
     expect(sentEmails.map((e) => e.to).sort()).toEqual(["ana@example.com", "caro@example.com"]);
     expect(sentEmails[0].subject).toBe("Nueva versión disponible");
+  });
+
+  it("cuenta como fallido, no como enviado, un correo que el proveedor rechaza", async () => {
+    await register("ana@example.com", "ana");
+    await register("rebota@example.com", "rebota");
+
+    const res = await request(app)
+      .post("/api/admin/broadcast-release")
+      .set("x-admin-key", "test-admin-key")
+      .send(payload);
+
+    expect(res.body).toEqual({ sent: 1, failed: 1, skipped: 0 });
+  });
+
+  it("con only_email manda la prueba solo a esa cuenta registrada", async () => {
+    await register("ana@example.com", "ana");
+    await register("bea@example.com", "bea");
+
+    const res = await request(app)
+      .post("/api/admin/broadcast-release")
+      .set("x-admin-key", "test-admin-key")
+      .send({ ...payload, only_email: "ana@example.com" });
+
+    expect(res.body).toEqual({ sent: 1, failed: 0, skipped: 0 });
+    expect(sentEmails.map((e) => e.to)).toEqual(["ana@example.com"]);
+
+    const unknown = await request(app)
+      .post("/api/admin/broadcast-release")
+      .set("x-admin-key", "test-admin-key")
+      .send({ ...payload, only_email: "desconocido@example.com" });
+    expect(unknown.body).toEqual({ sent: 0, failed: 0, skipped: 0 });
   });
 
   it("valida el cuerpo de la petición", async () => {

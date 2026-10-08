@@ -9,6 +9,7 @@ const broadcastSchema = z.object({
   subject: z.string().trim().min(1).max(200),
   build_url: z.string().url(),
   notes_html: z.string().trim().min(1).max(5000),
+  only_email: z.string().trim().email().optional(),
 });
 
 /**
@@ -37,6 +38,7 @@ export function createAdminRouter(db: Db, sendEmail: SendEmail, broadcastLimiter
       subject: parsed.data.subject,
       buildUrl: parsed.data.build_url,
       notesHtml: parsed.data.notes_html,
+      onlyEmail: parsed.data.only_email,
     });
     logSecurityEvent("release_broadcast_sent", result);
     return res.json(result);

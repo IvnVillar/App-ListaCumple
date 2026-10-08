@@ -11,7 +11,7 @@ const FROM = "Lista de Deseos <onboarding@resend.dev>";
 export const sendEmail: SendEmail = async (to, subject, html) => {
   if (!process.env.RESEND_API_KEY) {
     console.warn(`RESEND_API_KEY no configurada: no se envía el email "${subject}" a ${to}.`);
-    return;
+    return false;
   }
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -28,11 +28,13 @@ export const sendEmail: SendEmail = async (to, subject, html) => {
   // investigarlo.
   if (!res.ok) {
     console.error(`Resend devolvió un error al enviar "${subject}" a ${to}:`, res.status, await res.text());
+    return false;
   }
+  return true;
 };
 
-export const resendMailer: Mailer = (to, resetUrl) =>
-  sendEmail(
+export const resendMailer: Mailer = async (to, resetUrl) => {
+  await sendEmail(
     to,
     "Recupera tu contraseña — Lista de Deseos",
     `
@@ -41,3 +43,4 @@ export const resendMailer: Mailer = (to, resetUrl) =>
       <p>Este enlace caduca en 1 hora. Si no has sido tú, ignora este correo — tu contraseña sigue siendo la misma.</p>
     `
   );
+};
